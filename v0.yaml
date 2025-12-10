@@ -1,0 +1,761 @@
+swagger: "2.0"
+info:
+  title: "Beam API Documentation"
+  version: "v0"
+  description: |
+    # Overview
+    The Beam API can be interacted through REST. Our API has predictable resource-oriented URLs, accepts and returns JSON-encoded responses, and uses standard HTTP response codes, authentication, and verbs.
+
+    For merchants to accept payments on Beam, a `Merchant` object representing their entity must first be created. Following a successful Merchant registration, each payment transaction in Beam is represented at a high level by the `Purchase` object. Each Purchase entity is associated to one merchant at the time of creation, representing who the payment should be made to. You can create and get the Purchase entities through our Purchases API.
+
+    More APIs coming soon
+
+    # Flows
+    ![](https://firebasestorage.googleapis.com/v0/b/beam-production-277702.appspot.com/o/documentations%2Fapi-checkout-flow.jpg?alt=media&token=5a91fbfc-c748-45c0-b2fc-ad47c09ea91c)<br/><br/>
+    
+    1. User requests to pay with merchant
+
+    2. Merchant calls `POST /purchases/{merchantId}` API to create purchase
+
+    3. Merchant receives payment link from Beam as a response to POST purchase API
+
+    4. Merchant sends the Beam payment link to user. Alternatively, merchant may choose to automatically redirect user to the link
+
+    5. User completes the payment in Beam checkout page or mobile application
+
+    6. Payment confirmation. Note that these 2 steps may occur in any order
+
+    7. Merchant receive notification for payment completion via webhook
+
+    8. User is redirected to payment confirmation page
+
+    # Security and Authentication
+
+    Beam API uses API keys to authenticate requests.
+    
+    Authentication to the API is performed via **HTTP Basic Auth**. In the username and password fields, provide the following:
+
+    **Username** - Provide your Beam merchant id<br/>
+    **Password** - Provide the API key that has been generated for you
+
+    You can have more than one API key per account and these API keys can be scoped to allow access to only the APIs you specify for it at creation.
+
+    All API requests must be made over HTTPS. Calls made over plain HTTP will fail. API requests without authentication will also fail.
+
+    Do not share your secret API keys in publicly accessible areas such as GitHub, client-side code, and so on.
+
+    # Webhook
+
+    Listen for events on your Beam account so your integration can trigger reactions automatically from incoming asynchronous events.
+
+    You can choose to use webhook so that you can be notified about events occurring on Beam such as Purchases being completed.
+
+    All of Beam webhook will be sent using HTTP POST request to the registered endpoint. The JSON payload for each request can be obtained from the request body. 
+    
+    Acknowledge the webhook by responding with status code `2xx`. Any other response code will cause the system to retry sending the message.
+
+    You can optionally validate the webhook using hash signature of each payload. This hash signature is included with the headers of each request as `X-Hub-Signature`.  Specifically, the signature is hex encoded HMAC digest obtained using SHA256 with a private key unique to each webhook endpoint. Note that the private key is base64 encoded.
+
+    ## Schema
+
+    ### Payment Result Webhook
+
+    Currently payment result webhook are only sent out when payment is completed. Payment failure will not triggger webhook notification.
+
+    | Name | Type | Description |
+    |---|---|---|
+    | merchantId  | string | The id of the merchant that created the purchase |
+    | purchaseId | string | The id of the purchase |
+    | state | string | The state of the payment. Possible values are: `complete` |
+    | customer | Customer | Customer data if requested |
+    | created | string | Creation time of the purchase in ISO 8601 format |
+    | lastUpdated | string | Last updated time of the purchase in ISO 8601 format |
+
+    ### Payment Result Customer
+
+    | Name | Type | Description |
+    |---|---|---|
+    | billingAddress | Address | Customer's billing address |
+    | shippingAddress | Address | Customer's shipping address |
+    | contactNumber  | string | Customer's contact number |
+    | email | string | Customer's email |
+    | title | string | Customer's title |
+    | firstName | Customer | Customer's firstname |
+    | lastName | string | Customer's lastname |
+    | dateOfBirth | string | Customer's date of birth (dd/MM/YYYY) |
+
+    ### Payment Result Address
+
+    | Name | Type | Description |
+    |---|---|---|
+    | fullStreetAddress  | string | Customer's street address |
+    | city  | string | Customer's city |
+    | country  | string | Customer's country |
+    | postCode | string | Customer's postcode |
+
+host: "partner-api.beamdata.co"
+consumes:
+  - application/json
+produces:
+  - application/json
+schemes:
+  - https
+
+paths:
+
+  # -------------- [START] Purchase -------------
+  /purchases/{merchantId}:
+    post:
+      consumes:
+        - application/json
+      description: Initializes the checkout flow, creating the `Purchase` object in
+        the database with the state `initiated`.
+      operationId: InitPurchase
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: NewPurchase entity
+          in: body
+          name: requestBody
+          required: true
+          schema:
+            $ref: '#/definitions/NewPurchase'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/PurchaseCreated'
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: New Purchase
+      tags:
+        - Purchases
+  /purchases/{merchantId}/{purchaseId}:
+    get:
+      consumes:
+        - application/json
+      description: Returns a Purchase entity given an ID. Marks the Purchase as `beamed`
+      operationId: GetPurchase
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: purchaseId
+          in: path
+          name: purchaseId
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/PurchasePublicView'
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: Get Purchase Public View
+      tags:
+        - Purchases
+  /purchases/{merchantId}/{purchaseId}/detail:
+    get:
+      consumes:
+        - application/json
+      description: Returns a Purchase with customer and basic payment detail
+      operationId: GetPurchaseDetailView
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: purchaseId
+          in: path
+          name: purchaseId
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/PurchaseDetailView'
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: Get Purchase Detail View
+      tags:
+        - Purchases
+  /purchases/{merchantId}/{purchaseId}/disable:
+    post:
+      consumes:
+        - application/json
+      description: |-
+        Merchant disable purchase to prevent further actions from user.
+        Successful payment that was attempted prior to purchase being disabled will go through as before
+      operationId: DisablePurchase
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: purchaseId
+          in: path
+          name: purchaseId
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/APIResponse'
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: Disable Purchase
+      tags:
+        - Purchases
+  /refunds/{merchantId}/{purchaseId}:
+    get:
+      consumes:
+        - application/json
+      description: Fetches the current Purchase's Refund entities
+      operationId: GetRefunds
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: purchaseId
+          in: path
+          name: purchaseId
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            items:
+              $ref: '#/definitions/Refund'
+            type: array
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: Get Refunds
+      tags:
+        - Refunds
+    post:
+      consumes:
+        - application/json
+      description: Submit a request to refund a given Purchase.
+      operationId: RefundPurchase
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: purchaseId
+          in: path
+          name: purchaseId
+          required: true
+          type: string
+        - description: RefundRequest
+          in: body
+          name: requestBody
+          required: true
+          schema:
+            $ref: '#/definitions/RefundRequest'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/APIResponse'
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: Refund Purchase
+      tags:
+        - Refunds
+  /refunds/{merchantId}/{purchaseId}/option:
+    get:
+      consumes:
+        - application/json
+      description: Fetches the current Purchase's available refund option
+      operationId: GetRefundsOption
+      parameters:
+        - description: merchantId
+          in: path
+          name: merchantId
+          required: true
+          type: string
+        - description: purchaseId
+          in: path
+          name: purchaseId
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/RefundOption'
+        default:
+          description: fail
+          schema:
+            $ref: '#/definitions/APIResponse'
+      summary: Get Refunds Option
+      tags:
+        - Refunds
+  # -------------- [END] Purchase -------------
+
+definitions:
+
+  # -------------- [START-DEFINITIONS] Payment Router -------------
+  Address:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      fullStreetAddress:
+        type: string
+      postCode:
+        type: string
+    type: object
+  Customer:
+    properties:
+      additionalField0:
+        type: string
+      additionalField1:
+        type: string
+      additionalField2:
+        type: string
+      additionalField3:
+        type: string
+      additionalField4:
+        type: string
+      additionalField5:
+        type: string
+      additionalField6:
+        type: string
+      additionalField7:
+        type: string
+      additionalField8:
+        type: string
+      additionalField9:
+        type: string
+      billingAddress:
+        $ref: '#/definitions/Address'
+      contactNumber:
+        type: string
+      dateOfBirth:
+        description: dd/MM/YYYY
+        type: string
+      email:
+        type: string
+      facebookName:
+        type: string
+      firstName:
+        type: string
+      instagramName:
+        type: string
+      lastName:
+        type: string
+      lineId:
+        type: string
+      shippingAddress:
+        $ref: '#/definitions/Address'
+      title:
+        type: string
+      twitterId:
+        type: string
+      userId:
+        type: string
+    required:
+      - userId
+    type: object
+  InstallmentOptionReq:
+    properties:
+      period:
+        type: integer
+    type: object
+  MerchantBasicInfo:
+    properties:
+      availablePaymentMethods:
+        items:
+          type: string
+        type: array
+      logoUrl:
+        type: string
+      name:
+        type: string
+    type: object
+  NewPurchase:
+    properties:
+      channel:
+        description: Channel through which the purchase is being made
+        example: line
+        type: string
+      expiry:
+        description: |-
+          Expiry indicates the time, in ISO-8601 format, after which the purchase will expire
+          If this property is not specified, the purchase will not expire
+        type: string
+      installmentOptions:
+        description: InstallmentOptions overrides the merchant's default installment options setting. Installment period availability is still subject to merchant's payment settings
+        items:
+          $ref: '#/definitions/InstallmentOptionReq'
+        type: array
+      order:
+        $ref: '#/definitions/Order'
+        description: Order information such as amount, product description
+      redirectUrl:
+        description: |-
+          RedirectURL for frontend to redirect user to after successful payment
+          Avoid putting sensitive information into redirect url as this will be available in public API
+        type: string
+      requiredFieldsFormId:
+        description: |-
+          RequiredFieldsFormId is the form id for customer data form
+          If not specified, no customer data will not be requested
+        example: formId123
+        type: string
+      supportedPaymentMethods:
+        description: |-
+          SupportedPaymentMethods overrides the merchant's default payment method setting
+          Payment method specified here must be enabled by the merchant
+        example:
+          - creditCard
+        items:
+          enum:
+            - creditCard
+            - internetBanking
+            - eWallet
+            - installmentsCc
+            - bnpl
+            - qrThb
+          type: string
+        type: array
+    required:
+      - order
+    type: object
+  Order:
+    properties:
+      currencyCode:
+        description: CurrencyCode is the ISO-4217 currency for the order - DEPRECATED;
+          currency code pulled from merchant instead
+        example: THB
+        type: string
+      description:
+        description: Description of the order to display to the customer
+        example: 1 Cookies Box
+        maxLength: 500
+        type: string
+      merchantReference:
+        description: MerchantReference is the internal note that merchant can attach
+          to the order
+        example: cookies order 1
+        type: string
+      merchantReferenceId:
+        description: MerchantReferenceID can be use to specify the order on merchant's
+          system for later reconciliations
+        example: merchantRef1
+        maxLength: 64
+        type: string
+      netAmount:
+        description: |-
+          NetAmount is the amount that the customer will be charged
+          Must be equal to `totalAmount` - `totalDiscount`
+        example: 900
+        minimum: 1
+        type: number
+      orderItems:
+        description: |-
+          OrderItems is an array listing all items in the order
+          If not specified, order breakdown will not be displayed to the customer
+        items:
+          $ref: '#/definitions/OrderItem'
+        type: array
+      totalAmount:
+        description: TotalAmount is the sum of all items in the order
+        example: 1000
+        minimum: 1
+        type: number
+      totalDiscount:
+        description: TotalDiscount the total discount for applied to the order
+        example: 100
+        minimum: 0
+        type: number
+    required:
+      - netAmount
+      - totalAmount
+    type: object
+  OrderItem:
+    properties:
+      product:
+        $ref: '#/definitions/Product'
+        description: Product details
+      quantity:
+        description: Quantity of the product in the order
+        minimum: 1
+        type: integer
+    required:
+      - product
+      - quantity
+    type: object
+  Originator:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+    type: object
+  Product:
+    properties:
+      description:
+        description: Description of the product
+        type: string
+      imageUrl:
+        description: ImageURL of the product image to display to customer
+        type: string
+      name:
+        description: Name of the product
+        example: Cookies
+        type: string
+      price:
+        description: Price of the product, before any discounts
+        example: 1000
+        type: number
+      sku:
+        description: Sku for the product
+        type: string
+    required:
+      - name
+      - price
+    type: object
+  PurchaseCreated:
+    properties:
+      paymentLink:
+        type: string
+      purchaseId:
+        type: string
+    type: object
+  PurchaseDetailView:
+    properties:
+      created:
+        type: string
+      customer:
+        $ref: '#/definitions/Customer'
+      expiry:
+        type: string
+      genericPurchaseId:
+        type: string
+      installmentPeriod:
+        type: integer
+      isDisabled:
+        type: boolean
+      lastUpdated:
+        type: string
+      merchantBasicInfo:
+        $ref: '#/definitions/MerchantBasicInfo'
+      merchantId:
+        type: string
+      order:
+        $ref: '#/definitions/Order'
+      originator:
+        $ref: '#/definitions/Originator'
+      paymentId:
+        type: string
+      paymentLink:
+        type: string
+      paymentMethod:
+        type: string
+      purchaseId:
+        type: string
+      redirectUrl:
+        type: string
+      refunds:
+        items:
+          $ref: '#/definitions/RefundPublicView'
+        type: array
+      requiredFieldsFormId:
+        type: string
+      state:
+        enum:
+          - initiated
+          - beamed
+          - paying
+          - complete
+          - failed
+        type: string
+    type: object
+  PurchasePublicView:
+    properties:
+      created:
+        type: string
+      expiry:
+        type: string
+      genericPurchaseId:
+        type: string
+      isDisabled:
+        type: boolean
+      lastUpdated:
+        type: string
+      merchantBasicInfo:
+        $ref: '#/definitions/MerchantBasicInfo'
+      merchantId:
+        type: string
+      order:
+        $ref: '#/definitions/Order'
+      paymentId:
+        type: string
+      paymentLink:
+        type: string
+      purchaseId:
+        type: string
+      redirectUrl:
+        type: string
+      refunds:
+        items:
+          $ref: '#/definitions/RefundPublicView'
+        type: array
+      requiredFieldsFormId:
+        type: string
+      state:
+        enum:
+          - initiated
+          - beamed
+          - paying
+          - complete
+          - failed
+        type: string
+    type: object
+  Refund:
+    properties:
+      amount:
+        type: number
+      created:
+        type: string
+      gatewayRefId:
+        type: string
+      lastUpdated:
+        type: string
+      reason:
+        type: string
+      refundId:
+        type: string
+      rejectedReason:
+        type: string
+      requester:
+        $ref: '#/definitions/Requester'
+      status:
+        enum:
+          - pending
+          - refunded
+          - voided
+          - rejected
+        type: string
+      type:
+        enum:
+          - void
+          - full-refund
+          - partial-refund
+        type: string
+    type: object
+  RefundOption:
+    properties:
+      maxRefundableAmount:
+        description: |-
+          MaxRefundableAmount for the refund. RefundRequest will be rejected if amount exceeds this value.
+          if amount is -1, then RefundRequest.Amount field is not required as it will default to the full txn amount.
+        type: number
+      option:
+        description: Option available for specifying refund type
+        enum:
+          - void
+          - refund
+          - none
+        type: string
+    type: object
+  RefundPublicView:
+    properties:
+      amount:
+        type: number
+      created:
+        type: string
+      lastUpdated:
+        type: string
+      status:
+        enum:
+          - pending
+          - refunded
+          - voided
+          - rejected
+        type: string
+      type:
+        enum:
+          - void
+          - full-refund
+          - partial-refund
+        type: string
+    type: object
+  RefundRequest:
+    properties:
+      amount:
+        description: Amount intended to refund or void. Required if type provided
+          is `refund`, enter 0 if `void`.
+        type: number
+      option:
+        description: Option of the refund
+        enum:
+          - void
+          - refund
+        type: string
+      reason:
+        description: Reason of the refund
+        type: string
+    required:
+      - option
+    type: object
+  Requester:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+    type: object
+  # -------------- [END-DEFINITIONS] Payment Router -------------
+
+  APIResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
