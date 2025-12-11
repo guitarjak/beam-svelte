@@ -1,13 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { BEAM_MERCHANT_ID, BEAM_API_KEY, BEAM_ENVIRONMENT } from '$env/static/private';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 
 /**
  * Test endpoint to verify Beam integration
  * GET /test/beam
  */
 export const GET: RequestHandler = async () => {
+  const BEAM_MERCHANT_ID = privateEnv.BEAM_MERCHANT_ID || '';
+  const BEAM_API_KEY = privateEnv.BEAM_API_KEY || '';
+  const BEAM_ENVIRONMENT = privateEnv.BEAM_ENVIRONMENT || 'production';
+  const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL || '';
+
   // Check if environment variables are configured
   const isConfigured =
     BEAM_MERCHANT_ID !== 'your-merchant-id-here' &&
