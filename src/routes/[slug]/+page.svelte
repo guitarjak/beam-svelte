@@ -96,7 +96,7 @@
 <svelte:head>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </svelte:head>
 
 <!-- Premium checkout page with asymmetric 7-5 grid and trust signals -->
@@ -112,11 +112,24 @@
             <div class="gradient-orb orb-1"></div>
             <div class="gradient-orb orb-2"></div>
             <div class="gradient-orb orb-3"></div>
-            <div class="product-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
+
+            {#if data.product.imageUrl}
+              <!-- Product image -->
+              <div class="product-image-container">
+                <img
+                  src={data.product.imageUrl}
+                  alt={data.product.name}
+                  class="product-image"
+                />
+              </div>
+            {:else}
+              <!-- Default icon -->
+              <div class="product-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -229,6 +242,7 @@
               method="POST"
               action="?/payWithCard"
               class="card-form"
+              autocomplete="new-password"
               use:enhance={() => {
                 isLoading = true;
                 return async ({ update }) => {
@@ -245,6 +259,9 @@
                   id="cardHolderName"
                   name="cardHolderName"
                   placeholder="JOHN DOE"
+                  autocomplete="off"
+                  readonly
+                  on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
                   required
                   disabled={isLoading}
                 />
@@ -259,6 +276,9 @@
                   name="cardNumber"
                   placeholder="4111 1111 1111 1111"
                   maxlength="19"
+                  autocomplete="off"
+                  readonly
+                  on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
                   required
                   disabled={isLoading}
                 />
@@ -269,12 +289,15 @@
                   <label for="expiryMonth" class="input-label">MM</label>
                   <input
                     class="form-input"
-                    type="number"
+                    type="text"
+                    inputmode="numeric"
                     id="expiryMonth"
                     name="expiryMonth"
                     placeholder="12"
-                    min="1"
-                    max="12"
+                    maxlength="2"
+                    autocomplete="off"
+                    readonly
+                    on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
                     required
                     disabled={isLoading}
                   />
@@ -283,12 +306,15 @@
                   <label for="expiryYear" class="input-label">YY</label>
                   <input
                     class="form-input"
-                    type="number"
+                    type="text"
+                    inputmode="numeric"
                     id="expiryYear"
                     name="expiryYear"
                     placeholder="26"
-                    min="24"
-                    max="99"
+                    maxlength="2"
+                    autocomplete="off"
+                    readonly
+                    on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
                     required
                     disabled={isLoading}
                   />
@@ -298,10 +324,14 @@
                   <input
                     class="form-input"
                     type="text"
+                    inputmode="numeric"
                     id="securityCode"
                     name="securityCode"
                     placeholder="123"
                     maxlength="4"
+                    autocomplete="off"
+                    readonly
+                    on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
                     required
                     disabled={isLoading}
                   />
@@ -478,7 +508,7 @@
 
 <style>
   :root {
-    --font-display: 'Crimson Pro', serif;
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
     /* Sophisticated slate color palette */
@@ -687,6 +717,27 @@
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
   }
 
+  /* Product image container and styling */
+  .product-image-container {
+    width: 280px;
+    height: 280px;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+    background: var(--slate-800);
+    border: 3px solid var(--slate-700);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
   /* Product details */
   .product-details {
     color: white;
@@ -739,7 +790,7 @@
   .product-name {
     font-family: var(--font-display);
     font-size: 2.75rem;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.2;
     margin: 0 0 1rem;
     color: white;
@@ -804,9 +855,9 @@
   .price-value {
     font-family: var(--font-display);
     font-size: 3.5rem;
-    font-weight: 700;
+    font-weight: 800;
     color: white;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 
   /* Security badges */
@@ -911,7 +962,7 @@
     font-weight: 700;
     color: var(--slate-900);
     margin: 0 0 1.25rem;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
 
   /* Input groups */
@@ -955,6 +1006,12 @@
     background: var(--slate-50);
     cursor: not-allowed;
     opacity: 0.6;
+  }
+
+  .form-input:read-only {
+    cursor: text;
+    background: white;
+    opacity: 1;
   }
 
   .input-hint {
@@ -1464,6 +1521,11 @@
     .product-icon svg {
       width: 75px;
       height: 75px;
+    }
+
+    .product-image-container {
+      width: 220px;
+      height: 220px;
     }
 
     .product-name {

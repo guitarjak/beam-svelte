@@ -1,12 +1,13 @@
 [
   {
     "slug": "product-1",
-    "name": "Super Productivity Course",
-    "description": "A simple course to help you get more done.",
+    "name": "Super Productivity Toolkit",
+    "description": "สวัสดีค้าบ ผมชื่อน้องวินด์มิลฮะ ไอจิ๋วนี่แหละที่จะทำให้ผมมีไฟในการทำงาน ฮ่าๆๆ",
     "price": 99000,
     "currency": "THB",
     "active": true,
-    "successUrl": "https://www.google.com"
+    "successUrl": "https://www.google.com",
+    "imageUrl": "/images/products/super-productivity.JPG"
   },
   {
     "slug": "product-2",
@@ -15,6 +16,7 @@
     "price": 149000,
     "currency": "THB",
     "active": true,
-    "successUrl": "https://www.google.com"
+    "successUrl": "https://www.google.com",
+    "imageUrl": ""
   }
 ]
