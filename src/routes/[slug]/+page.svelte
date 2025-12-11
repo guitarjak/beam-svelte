@@ -496,11 +496,11 @@
     <!-- Footer -->
     <div class="checkout-footer">
       <div class="footer-links">
-        <a href="#">Terms</a>
+        <a href="https://beamcheckout.com/terms" rel="noopener noreferrer">Terms</a>
         <span class="divider">·</span>
-        <a href="#">Privacy</a>
+        <a href="https://beamcheckout.com/privacy" rel="noopener noreferrer">Privacy</a>
         <span class="divider">·</span>
-        <a href="#">Support</a>
+        <a href="mailto:support@beamcheckout.com">Support</a>
       </div>
     </div>
   </div>
@@ -596,44 +596,6 @@
       opacity: 1;
       transform: translateY(0);
     }
-  }
-
-  /* Trust badge */
-  .trust-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 2rem;
-    color: var(--accent-success);
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 3rem;
-    opacity: 0;
-    transition: all 0.4s ease-out;
-  }
-
-  .trust-badge.mounted {
-    opacity: 1;
-    animation: slideInLeft 0.6s ease-out;
-  }
-
-  @keyframes slideInLeft {
-    from {
-      opacity: 0;
-      transform: translateX(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .shield-icon {
-    width: 1.25rem;
-    height: 1.25rem;
   }
 
   /* Product hero with gradient orbs */
@@ -743,50 +705,6 @@
     color: white;
   }
 
-  .rating-container {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .stars {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .star {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #fbbf24;
-    opacity: 0;
-    animation: starPop 0.4s ease-out forwards;
-  }
-
-  .star.mounted {
-    animation: starPop 0.4s ease-out forwards;
-  }
-
-  @keyframes starPop {
-    0% {
-      opacity: 0;
-      transform: scale(0.3) rotate(-45deg);
-    }
-    50% {
-      transform: scale(1.1) rotate(5deg);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) rotate(0deg);
-    }
-  }
-
-  .rating-text {
-    font-size: 0.9375rem;
-    color: var(--slate-300);
-    font-weight: 500;
-  }
-
   .product-name {
     font-family: var(--font-display);
     font-size: 2.75rem;
@@ -802,37 +720,6 @@
     line-height: 1.7;
     color: var(--slate-300);
     margin: 0 0 2rem;
-  }
-
-  /* Features list with checkmarks */
-  .features-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 3rem;
-  }
-
-  .feature-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1rem;
-    color: var(--slate-200);
-    opacity: 0;
-    transform: translateX(-20px);
-    transition: all 0.4s ease-out;
-  }
-
-  .feature-item.mounted {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .checkmark {
-    width: 1.5rem;
-    height: 1.5rem;
-    color: var(--accent-success);
-    flex-shrink: 0;
   }
 
   /* Price container */
@@ -858,51 +745,6 @@
     font-weight: 800;
     color: white;
     letter-spacing: -0.03em;
-  }
-
-  /* Security badges */
-  .security-badges {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-  }
-
-  .badge {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.75rem;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-  }
-
-  .badge:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-  }
-
-  .badge svg {
-    width: 2rem;
-    height: 2rem;
-    color: var(--accent-success);
-    flex-shrink: 0;
-  }
-
-  .badge-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: white;
-    line-height: 1.2;
-  }
-
-  .badge-subtitle {
-    font-size: 0.75rem;
-    color: var(--slate-400);
-    line-height: 1.2;
   }
 
   /* Right side: Checkout form (40%) */
@@ -1106,18 +948,6 @@
     border-radius: 0.375rem;
   }
 
-  .payment-icon.gpay {
-    background: white;
-    border: 1px solid var(--slate-300);
-    border-radius: 0.375rem;
-  }
-
-  .payment-icon.gpay span {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: #4285f4;
-  }
-
   .payment-label {
     flex: 1;
     font-size: 0.9375rem;
@@ -1164,32 +994,6 @@
   .mc-circle.orange {
     background: #f79e1b;
     left: 0.5rem;
-  }
-
-  /* Info notice */
-  .info-notice {
-    display: flex;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: rgba(37, 99, 235, 0.05);
-    border: 1px solid rgba(37, 99, 235, 0.2);
-    border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .info-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: var(--accent-primary);
-    flex-shrink: 0;
-    margin-top: 0.125rem;
-  }
-
-  .info-notice p {
-    margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.6;
-    color: var(--slate-700);
   }
 
   /* Error message */
@@ -1287,24 +1091,9 @@
     background: var(--slate-50);
   }
 
-  .cta-button.gpay-button {
-    background: #000;
-    color: white;
-    padding: 1.25rem 1.5rem;
-  }
-
-  .cta-button.gpay-button:hover:not(:disabled) {
-    background: #1a1a1a;
-  }
-
   .cta-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .gpay-logo {
-    height: 1.5rem;
-    width: auto;
   }
 
   /* QR Code display */

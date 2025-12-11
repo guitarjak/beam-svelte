@@ -1,10 +1,12 @@
-import { BEAM_MERCHANT_ID, BEAM_API_KEY, BEAM_ENVIRONMENT } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 // Beam API base URLs
 const PROD_BASE = 'https://api.beamcheckout.com/api/v1';
 const PLAYGROUND_BASE = 'https://playground.api.beamcheckout.com/api/v1';
 
-const envName = (BEAM_ENVIRONMENT || '').toLowerCase();
+const BEAM_MERCHANT_ID = env.BEAM_MERCHANT_ID || '';
+const BEAM_API_KEY = env.BEAM_API_KEY || '';
+const envName = (env.BEAM_ENVIRONMENT || 'production').toLowerCase();
 const isPlayground = envName === 'playground';
 const configuredBase = isPlayground ? PLAYGROUND_BASE : PROD_BASE;
 
@@ -127,6 +129,11 @@ export interface BeamChargeResponse {
  * Create Basic Auth header for Beam API
  */
 function getAuthHeader(): string {
+  if (!BEAM_MERCHANT_ID || !BEAM_API_KEY) {
+    throw new Error(
+      'Beam credentials missing. Set BEAM_MERCHANT_ID and BEAM_API_KEY environment variables.'
+    );
+  }
   const credentials = `${BEAM_MERCHANT_ID}:${BEAM_API_KEY}`;
   const encoded = Buffer.from(credentials).toString('base64');
   return `Basic ${encoded}`;
