@@ -1,8 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { getProductBySlug } from '$lib/server/products';
 import { createCharge } from '$lib/server/beam';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import { env as publicEnv } from '$env/dynamic/public';
 import type { PageServerLoad, Actions } from './$types';
+
+const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL || '';
 
 function buildSuccessUrl(base: string | undefined, extraParams: Record<string, string | undefined>) {
   const target = base && base.trim().length ? base : '/checkout/success';
