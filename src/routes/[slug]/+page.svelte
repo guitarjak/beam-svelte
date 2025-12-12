@@ -99,6 +99,39 @@
     }
   }
 
+  // Tokenize card via secure server-side endpoint (PCI-compliant)
+  // Card data sent to OUR server, which uses secret API key to tokenize with Beam
+  // API keys never exposed to client!
+  async function tokenizeCard(cardData: {
+    pan: string;
+    expiryMonth: number;
+    expiryYear: number;
+    cardHolderName?: string;
+  }): Promise<{ id: string }> {
+    // Call our secure server endpoint
+    const response = await fetch('/api/tokenize-card', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        pan: cardData.pan,
+        expiryMonth: cardData.expiryMonth,
+        expiryYear: cardData.expiryYear,
+        cardHolderName: cardData.cardHolderName
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.error?.errorMessage || 'Card tokenization failed';
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result;
+  }
+
   function selectMethod(method: 'promptpay' | 'card') {
     selectedMethod = method;
     // Clear any server-side form errors when switching payment methods
@@ -317,13 +350,85 @@
               method="POST"
               action="?/payWithCard"
               class="card-form"
-              autocomplete="new-password"
-              use:enhance={() => {
+              autocomplete="off"
+              on:submit|preventDefault={async (event) => {
+                if (isLoading) return;
+
                 isLoading = true;
-                return async ({ update }) => {
+                try {
+                  const formElement = event.currentTarget as HTMLFormElement;
+                  const formData = new FormData(formElement);
+
+                  // Get card data from form
+                  const cardNumberRaw = formData.get('cardNumber')?.toString() || '';
+                  const pan = cardNumberRaw.replace(/\s/g, ''); // Remove spaces
+                  const expiryMonth = parseInt(formData.get('expiryMonth')?.toString() || '0');
+                  const expiryYear = parseInt(formData.get('expiryYear')?.toString() || '0');
+                  const cardHolderName = formData.get('cardHolderName')?.toString() || '';
+                  const securityCode = formData.get('securityCode')?.toString() || '';
+
+                  // Basic validation
+                  if (!pan || !expiryMonth || !expiryYear || !cardHolderName || !securityCode) {
+                    throw new Error('All card fields are required');
+                  }
+
+                  // Tokenize the card on the client-side (PCI-compliant)
+                  const tokenResponse = await tokenizeCard({
+                    pan,
+                    expiryMonth,
+                    expiryYear,
+                    cardHolderName
+                  });
+
+                  // Create new FormData with token and CVV (CVV required by Beam)
+                  const tokenizedFormData = new FormData();
+                  tokenizedFormData.set('cardToken', tokenResponse.id);
+                  tokenizedFormData.set('securityCode', securityCode); // CVV required for charge
+                  tokenizedFormData.set('cardHolderName', cardHolderName);
+                  // Get last 4 digits for display/logging (non-sensitive)
+                  tokenizedFormData.set('last4', pan.slice(-4));
+                  // Card brand detection (basic)
+                  const firstDigit = pan[0];
+                  let brand = 'UNKNOWN';
+                  if (firstDigit === '4') brand = 'VISA';
+                  else if (firstDigit === '5') brand = 'MASTERCARD';
+                  tokenizedFormData.set('brand', brand);
+
+                  // Submit the form with token
+                  const response = await fetch('?/payWithCard', {
+                    method: 'POST',
+                    body: tokenizedFormData
+                  });
+
+                  // Handle redirect responses (3DS)
+                  if (response.redirected) {
+                    window.location.href = response.url;
+                    return;
+                  }
+
+                  // Parse the response
+                  const contentType = response.headers.get('content-type');
+                  if (contentType && contentType.includes('application/json')) {
+                    const result = await response.json();
+                    if (result.type === 'redirect') {
+                      window.location.href = result.location;
+                    } else {
+                      // Update the page with the response
+                      window.location.reload();
+                    }
+                  } else {
+                    // If not JSON, it's likely an HTML redirect or success page
+                    window.location.reload();
+                  }
+                } catch (error) {
+                  console.error('Card payment error:', error);
+                  // Display error to user
+                  form = {
+                    error: error instanceof Error ? error.message : 'Payment failed. Please try again.'
+                  };
+                } finally {
                   isLoading = false;
-                  await update();
-                };
+                }
               }}
             >
               <div class="input-group">

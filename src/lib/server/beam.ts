@@ -10,10 +10,15 @@ const envName = (env.BEAM_ENVIRONMENT || 'production').toLowerCase();
 const isPlayground = envName === 'playground';
 const configuredBase = isPlayground ? PLAYGROUND_BASE : PROD_BASE;
 
-// Log the environment on startup
-console.log(
-  `[Beam] Using ${envName || 'production'} environment (base: ${configuredBase}, merchant: ${BEAM_MERCHANT_ID})`
-);
+// Log the environment on startup (safe for production)
+const isProduction = envName === 'production';
+if (isProduction) {
+  console.log(`[Beam] Using production environment`);
+} else {
+  console.log(
+    `[Beam] Using ${envName} environment (base: ${configuredBase}, merchant: ${BEAM_MERCHANT_ID})`
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -35,7 +40,7 @@ export type ChargeStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED';
 export type ChargeAction = 'NONE' | 'REDIRECT' | 'ENCODED_IMAGE';
 
 /**
- * Card payment details for CARD payment method
+ * Card payment details for CARD payment method (raw card data)
  */
 export interface CardPaymentMethod {
   paymentMethodType: 'CARD';
@@ -45,6 +50,17 @@ export interface CardPaymentMethod {
     expiryMonth: number;
     expiryYear: number;
     securityCode: string; // CVV
+  };
+}
+
+/**
+ * Card token payment method (PCI-compliant - RECOMMENDED)
+ */
+export interface CardTokenPaymentMethod {
+  paymentMethodType: 'CARD_TOKEN';
+  cardToken: {
+    cardTokenId: string; // Token from tokenization
+    securityCode: string; // CVV (still required for charge)
   };
 }
 
@@ -61,7 +77,7 @@ export interface PromptPayPaymentMethod {
 /**
  * Payment method union type
  */
-export type PaymentMethod = CardPaymentMethod | PromptPayPaymentMethod;
+export type PaymentMethod = CardPaymentMethod | CardTokenPaymentMethod | PromptPayPaymentMethod;
 
 /**
  * Customer information (optional)
@@ -150,7 +166,10 @@ async function beamRequest<T>(
     const url = `${baseUrl}${endpoint}`;
 
     console.log(`[Beam] ${options.method || 'GET'} ${url}`);
-    console.log(`[Beam] Merchant ID: ${BEAM_MERCHANT_ID}`);
+    // Only log merchant ID in non-production environments
+    if (!isProduction) {
+      console.log(`[Beam] Merchant ID: ${BEAM_MERCHANT_ID}`);
+    }
 
     try {
       const response = await fetch(url, {

@@ -46,7 +46,7 @@ export const load: PageServerLoad = ({ params }) => {
 
 // Form actions
 export const actions = {
-  // Handle card payment
+  // Handle card payment with tokenized card (PCI-compliant)
   payWithCard: async ({ request, params }) => {
     const { slug } = params;
 
@@ -58,37 +58,34 @@ export const actions = {
 
     // Get form data
     const formData = await request.formData();
-    const cardHolderName = formData.get('cardHolderName')?.toString() || '';
-    const cardNumber = formData.get('cardNumber')?.toString() || '';
-    const expiryMonth = parseInt(formData.get('expiryMonth')?.toString() || '0');
-    const expiryYear = parseInt(formData.get('expiryYear')?.toString() || '0');
+    const cardToken = formData.get('cardToken')?.toString() || '';
     const securityCode = formData.get('securityCode')?.toString() || '';
+    const cardHolderName = formData.get('cardHolderName')?.toString() || '';
+    const last4 = formData.get('last4')?.toString() || '';
+    const brand = formData.get('brand')?.toString() || '';
 
-    // Basic validation
-    if (!cardHolderName || !cardNumber || !expiryMonth || !expiryYear || !securityCode) {
-      return fail(400, { error: 'All card fields are required' });
+    // Basic validation - token and CVV are required
+    if (!cardToken || !securityCode) {
+      return fail(400, { error: 'Card token and security code are required.' });
     }
-
-    // Remove spaces from card number for API
-    const pan = cardNumber.replace(/\s/g, '');
 
     // Generate a unique reference ID
     const referenceId = `order_${slug}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const successUrl = product.successUrl || '/checkout/success';
 
+    // Log non-sensitive card metadata for debugging (safe - no CVV logged)
+    console.log(`[Payment] Processing card payment: brand=${brand}, last4=****${last4}, ref=${referenceId}`);
+
     try {
-      // Create charge with Beam
+      // Create charge with Beam using the token
       const charge = await createCharge({
         amount: product.price, // Already in satang
         currency: 'THB',
         paymentMethod: {
-          paymentMethodType: 'CARD',
-          card: {
-            pan,
-            cardHolderName: cardHolderName.toUpperCase(),
-            expiryMonth,
-            expiryYear,
-            securityCode
+          paymentMethodType: 'CARD_TOKEN',
+          cardToken: {
+            cardTokenId: cardToken,
+            securityCode: securityCode // CVV required by Beam (not logged)
           }
         },
         referenceId,
@@ -129,7 +126,7 @@ export const actions = {
         error:
           err instanceof Error
             ? `Payment failed: ${err.message}`
-            : 'Payment failed. Please check your card details and try again.'
+            : 'Payment failed. Please try again.'
       });
     }
   },
