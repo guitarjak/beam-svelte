@@ -22,9 +22,18 @@
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let mounted = false;
 
+  // Reactive statement to determine if card error should be shown
+  $: showCardError = form?.error && selectedMethod === 'card';
+
   onMount(() => {
     mounted = true;
   });
+
+  // Helper: validate email format
+  function isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
 
   // Helper: format price in THB from satang
   function formatPriceTHB(satang: number) {
@@ -92,6 +101,10 @@
 
   function selectMethod(method: 'promptpay' | 'card') {
     selectedMethod = method;
+    // Clear any server-side form errors when switching payment methods
+    if (form?.error) {
+      form = null;
+    }
     if (method !== 'promptpay') {
       resetPromptPayState();
     }
@@ -223,7 +236,13 @@
           />
           <span class="input-hint">Receipt will be sent to this address</span>
           {#if emailError}
-            <span class="error-hint">Please enter your email address</span>
+            <span class="error-hint">
+              {#if !email || email.trim() === ''}
+                Please enter your email address
+              {:else}
+                Please enter a valid email address
+              {/if}
+            </span>
           {/if}
         </div>
       </div>
@@ -281,15 +300,16 @@
         </div>
 
         <!-- Payment method specific content -->
+        {#key selectedMethod}
         {#if selectedMethod === 'card'}
           <!-- Card form -->
           <div class="payment-form">
-            {#if form?.error}
+            {#if showCardError}
               <div class="error-message">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
-                {form.error}
+                {form?.error}
               </div>
             {/if}
 
@@ -397,12 +417,12 @@
         {:else if selectedMethod === 'promptpay'}
           <!-- PromptPay flow -->
           <div class="payment-form">
-            {#if promptPayError || (form?.error && selectedMethod === 'promptpay')}
+            {#if promptPayError}
               <div class="error-message">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
-                {promptPayError || form?.error}
+                {promptPayError}
               </div>
             {/if}
 
@@ -455,7 +475,7 @@
                 method="POST"
                 action="?/payWithPromptPay"
                 use:enhance={() => {
-                  if (!email || email.trim() === '') {
+                  if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
                     return async () => {};
                   }
@@ -490,7 +510,7 @@
                 method="POST"
                 action="?/payWithPromptPay"
                 use:enhance={() => {
-                  if (!email || email.trim() === '') {
+                  if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
                     return async () => {};
                   }
@@ -523,6 +543,7 @@
             {/if}
           </div>
         {/if}
+        {/key}
 
         <!-- Security notice -->
         <div class="security-notice">
