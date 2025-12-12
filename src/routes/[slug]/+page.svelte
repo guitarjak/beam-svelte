@@ -10,6 +10,9 @@
   // UI state
   let selectedMethod: 'promptpay' | 'card' = 'card';
   let email = '';
+  let cardNumber = '';
+  let expiryDate = '';
+  let emailError = false;
   let isLoading = false;
   let isPromptPayLoading = false;
   let promptPayError = '';
@@ -29,6 +32,62 @@
       style: 'currency',
       currency: 'THB'
     }).format(satang / 100);
+  }
+
+  // Helper: format card number with spaces (1234 5678 1234 5678)
+  function formatCardNumber(value: string) {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limit to 16 digits
+    const limited = digitsOnly.slice(0, 16);
+    // Add space every 4 digits
+    const formatted = limited.match(/.{1,4}/g)?.join(' ') || limited;
+    return formatted;
+  }
+
+  // Handle card number input
+  function handleCardNumberInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const formatted = formatCardNumber(input.value);
+    cardNumber = formatted;
+    input.value = formatted;
+  }
+
+  // Helper: format expiry date (MM / YY)
+  function formatExpiryDate(value: string) {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limit to 4 digits (MMYY)
+    const limited = digitsOnly.slice(0, 4);
+
+    if (limited.length >= 3) {
+      // Format as MM / YY
+      return `${limited.slice(0, 2)} / ${limited.slice(2)}`;
+    } else if (limited.length >= 1) {
+      // Just MM so far
+      return limited;
+    }
+    return limited;
+  }
+
+  // Handle expiry date input
+  function handleExpiryInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const formatted = formatExpiryDate(input.value);
+    expiryDate = formatted;
+    input.value = formatted;
+
+    // Extract MM and YY for hidden fields
+    const digitsOnly = formatted.replace(/\D/g, '');
+    if (digitsOnly.length >= 2) {
+      const monthInput = document.getElementById('expiryMonth') as HTMLInputElement;
+      if (monthInput) monthInput.value = digitsOnly.slice(0, 2);
+
+      if (digitsOnly.length === 4) {
+        const yearInput = document.getElementById('expiryYear') as HTMLInputElement;
+        if (yearInput) yearInput.value = digitsOnly.slice(2, 4);
+      }
+    }
   }
 
   function selectMethod(method: 'promptpay' | 'card') {
@@ -148,15 +207,6 @@
   <!-- Right side: Checkout form (40% - 5 columns) -->
   <div class="checkout-form-section">
     <div class="form-content">
-      <!-- Powered by Stripe badge -->
-      <div class="stripe-badge">
-        <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke-width="2"/>
-          <path d="M7 11V7a5 5 0 0110 0v4" stroke-width="2"/>
-        </svg>
-        <span>Secure checkout powered by <strong>Stripe</strong></span>
-      </div>
-
       <!-- Contact information -->
       <div class="form-section">
         <h2 class="section-title">Contact information</h2>
@@ -166,10 +216,15 @@
             type="email"
             id="email"
             bind:value={email}
+            on:input={() => emailError = false}
             placeholder="you@example.com"
             class="form-input"
+            class:input-error={emailError}
           />
           <span class="input-hint">Receipt will be sent to this address</span>
+          {#if emailError}
+            <span class="error-hint">Please enter your email address</span>
+          {/if}
         </div>
       </div>
 
@@ -252,82 +307,46 @@
               }}
             >
               <div class="input-group">
-                <label for="cardHolderName" class="input-label">Cardholder name</label>
+                <label for="cardInfo" class="input-label">Card information</label>
                 <input
                   class="form-input"
                   type="text"
-                  id="cardHolderName"
-                  name="cardHolderName"
-                  placeholder="JOHN DOE"
-                  autocomplete="off"
-                  readonly
-                  on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div class="input-group">
-                <label for="cardNumber" class="input-label">Card number</label>
-                <input
-                  class="form-input"
-                  type="text"
+                  inputmode="numeric"
                   id="cardNumber"
                   name="cardNumber"
-                  placeholder="4111 1111 1111 1111"
+                  placeholder="1234 1234 1234 1234"
                   maxlength="19"
                   autocomplete="off"
                   readonly
                   on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
+                  on:input={handleCardNumberInput}
+                  bind:value={cardNumber}
                   required
                   disabled={isLoading}
                 />
-              </div>
-
-              <div class="card-details-grid">
-                <div class="input-group">
-                  <label for="expiryMonth" class="input-label">MM</label>
+                <div class="card-expiry-cvc-grid">
                   <input
                     class="form-input"
                     type="text"
                     inputmode="numeric"
-                    id="expiryMonth"
-                    name="expiryMonth"
-                    placeholder="12"
-                    maxlength="2"
+                    id="expiryDisplay"
+                    placeholder="MM / YY"
+                    maxlength="7"
                     autocomplete="off"
                     readonly
                     on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
+                    on:input={handleExpiryInput}
+                    bind:value={expiryDate}
                     required
                     disabled={isLoading}
                   />
-                </div>
-                <div class="input-group">
-                  <label for="expiryYear" class="input-label">YY</label>
-                  <input
-                    class="form-input"
-                    type="text"
-                    inputmode="numeric"
-                    id="expiryYear"
-                    name="expiryYear"
-                    placeholder="26"
-                    maxlength="2"
-                    autocomplete="off"
-                    readonly
-                    on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <div class="input-group">
-                  <label for="securityCode" class="input-label">CVC</label>
                   <input
                     class="form-input"
                     type="text"
                     inputmode="numeric"
                     id="securityCode"
                     name="securityCode"
-                    placeholder="123"
+                    placeholder="CVC"
                     maxlength="4"
                     autocomplete="off"
                     readonly
@@ -336,6 +355,34 @@
                     disabled={isLoading}
                   />
                 </div>
+                <input
+                  type="hidden"
+                  id="expiryMonth"
+                  name="expiryMonth"
+                  value=""
+                />
+                <input
+                  type="hidden"
+                  id="expiryYear"
+                  name="expiryYear"
+                  value=""
+                />
+              </div>
+
+              <div class="input-group">
+                <label for="cardHolderName" class="input-label">Cardholder name</label>
+                <input
+                  class="form-input"
+                  type="text"
+                  id="cardHolderName"
+                  name="cardHolderName"
+                  placeholder="Full name on card"
+                  autocomplete="off"
+                  readonly
+                  on:focus={(e) => e.currentTarget.removeAttribute('readonly')}
+                  required
+                  disabled={isLoading}
+                />
               </div>
 
               <button
@@ -356,6 +403,23 @@
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 {promptPayError || form?.error}
+              </div>
+            {/if}
+
+            <!-- PromptPay instructions -->
+            {#if !promptPayResult}
+              <div class="promptpay-instructions">
+                <div class="promptpay-info">
+                  <p class="info-text">PromptPay is supported by bank apps and payment apps such as KBank, SCB, Bangkok Bank, Krungthai Bank and Krungsri.</p>
+                </div>
+                <div class="promptpay-step">
+                  <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="5" y="4" width="14" height="17" rx="2" stroke-width="2"/>
+                    <path d="M9 9h6M9 13h6" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M12 4v3" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <p class="step-text">You will be shown a QR code to scan using your mobile banking app.</p>
+                </div>
               </div>
             {/if}
 
@@ -391,6 +455,10 @@
                 method="POST"
                 action="?/payWithPromptPay"
                 use:enhance={() => {
+                  if (!email || email.trim() === '') {
+                    emailError = true;
+                    return async () => {};
+                  }
                   isPromptPayLoading = true;
                   resetPromptPayState();
                   return async ({ result, update }) => {
@@ -422,6 +490,10 @@
                 method="POST"
                 action="?/payWithPromptPay"
                 use:enhance={() => {
+                  if (!email || email.trim() === '') {
+                    emailError = true;
+                    return async () => {};
+                  }
                   isPromptPayLoading = true;
                   resetPromptPayState();
                   return async ({ result, update }) => {
@@ -460,6 +532,15 @@
           <span>Your payment information is encrypted and secure</span>
         </div>
 
+        <!-- Powered by Beam badge -->
+        <div class="stripe-badge" style="margin-top: 1rem;">
+          <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke-width="2"/>
+            <path d="M7 11V7a5 5 0 0110 0v4" stroke-width="2"/>
+          </svg>
+          <span>Secure checkout powered by <strong>Beam</strong></span>
+        </div>
+
         <!-- Security badges -->
         <div class="security-badges-checkout">
           <div class="badge-checkout">
@@ -480,15 +561,6 @@
               <div class="badge-subtitle">EU protected</div>
             </div>
           </div>
-          <div class="badge-checkout">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/>
-            </svg>
-            <div>
-              <div class="badge-title">Money Back</div>
-              <div class="badge-subtitle">30-day guarantee</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -496,7 +568,7 @@
     <!-- Footer -->
     <div class="checkout-footer">
       <div class="footer-links">
-        <a href="https://beamcheckout.com/terms" rel="noopener noreferrer">Terms</a>
+        <a href="https://beamcheckout.com/tncs" rel="noopener noreferrer">Terms</a>
         <span class="divider">·</span>
         <a href="https://beamcheckout.com/privacy" rel="noopener noreferrer">Privacy</a>
         <span class="divider">·</span>
@@ -863,6 +935,19 @@
     margin-top: 0.375rem;
   }
 
+  .input-error {
+    border-color: var(--accent-error) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+  }
+
+  .error-hint {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--accent-error);
+    margin-top: 0.375rem;
+    font-weight: 500;
+  }
+
   /* Payment methods */
   .payment-methods {
     display: flex;
@@ -1039,6 +1124,31 @@
     gap: 1.25rem;
   }
 
+  .card-expiry-cvc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: -1px;
+  }
+
+  .card-expiry-cvc-grid input:first-child {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0.5rem;
+  }
+
+  .card-expiry-cvc-grid input:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0.5rem;
+  }
+
+  .input-group > .form-input:first-of-type {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
   .card-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -1094,6 +1204,51 @@
   .cta-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* PromptPay instructions */
+  .promptpay-instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 0.75rem;
+  }
+
+  .promptpay-info {
+    margin: 0;
+  }
+
+  .info-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--slate-600);
+    margin: 0;
+  }
+
+  .promptpay-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--slate-200);
+  }
+
+  .step-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--slate-500);
+    flex-shrink: 0;
+  }
+
+  .step-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--slate-600);
+    margin: 0.25rem 0 0 0;
   }
 
   /* QR Code display */
@@ -1198,7 +1353,7 @@
   /* Security badges in checkout form */
   .security-badges-checkout {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
     margin-top: 1.5rem;
   }
