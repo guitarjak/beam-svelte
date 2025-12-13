@@ -2,10 +2,19 @@
   import type { PageData, ActionData } from './$types';
   import { enhance } from '$app/forms';
   import { onDestroy, onMount } from 'svelte';
+  import { env as publicEnv } from '$env/dynamic/public';
 
   // Receive product data from +page.server.ts
   export let data: PageData;
   export let form: ActionData;
+
+  // Beam public credentials (safe for browser)
+  const BEAM_MERCHANT_ID = 'dsp'; // Merchant ID is not sensitive
+  const BEAM_PUBLISHABLE_KEY = publicEnv.PUBLIC_BEAM_PUBLISHABLE_KEY || '';
+  const BEAM_ENVIRONMENT = 'playground'; // You can make this dynamic if needed
+  const BEAM_CLIENT_BASE = BEAM_ENVIRONMENT === 'playground'
+    ? 'https://playground.api.beamcheckout.com'
+    : 'https://api.beamcheckout.com';
 
   // UI state
   let selectedMethod: 'promptpay' | 'card' = 'card';
@@ -99,20 +108,25 @@
     }
   }
 
-  // Tokenize card via secure server-side endpoint (PCI-compliant)
-  // Card data sent to OUR server, which uses secret API key to tokenize with Beam
-  // API keys never exposed to client!
+  // Tokenize card directly with Beam's client API (PCI-compliant)
+  // Card data sent DIRECTLY to Beam using publishable key
+  // Server NEVER sees the PAN or expiry date!
   async function tokenizeCard(cardData: {
     pan: string;
     expiryMonth: number;
     expiryYear: number;
     cardHolderName?: string;
   }): Promise<{ id: string }> {
-    // Call our secure server endpoint
-    const response = await fetch('/api/tokenize-card', {
+    // Create Basic Auth header: base64(merchantId:publishableKey)
+    const credentials = `${BEAM_MERCHANT_ID}:${BEAM_PUBLISHABLE_KEY}`;
+    const encodedCredentials = btoa(credentials);
+
+    // Call Beam's client tokenization API directly
+    const response = await fetch(`${BEAM_CLIENT_BASE}/client/v1/card-tokens`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${encodedCredentials}`
       },
       body: JSON.stringify({
         pan: cardData.pan,
