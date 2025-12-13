@@ -2,16 +2,46 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { getProductBySlug } from '$lib/server/products';
 import { createCharge } from '$lib/server/beam';
 import { env as publicEnv } from '$env/dynamic/public';
+import { env } from '$env/dynamic/private';
 import type { PageServerLoad, Actions } from './$types';
 
 const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL || '';
 
+// SECURITY: URL allowlist for redirect protection
+// Only allow redirects to these domains (prevents open redirect vulnerability)
+// Load allowed hosts from environment variable (comma-separated list)
+const ALLOWED_REDIRECT_HOSTS = (env.ALLOWED_REDIRECT_HOSTS || 'localhost,127.0.0.1')
+  .split(',')
+  .map(host => host.trim())
+  .filter(host => host.length > 0);
+
+/**
+ * Validates and builds a safe success URL with allowlist protection
+ * Falls back to internal success page if URL is not on allowlist
+ */
 function buildSuccessUrl(base: string | undefined, extraParams: Record<string, string | undefined>) {
   const target = base && base.trim().length ? base : '/checkout/success';
-  const url = target.startsWith('http')
-    ? new URL(target)
-    : new URL(target.startsWith('/') ? target : `/${target}`, PUBLIC_BASE_URL);
 
+  // Parse the target URL
+  let url: URL;
+  try {
+    url = target.startsWith('http')
+      ? new URL(target)
+      : new URL(target.startsWith('/') ? target : `/${target}`, PUBLIC_BASE_URL);
+  } catch {
+    // Invalid URL format - use safe fallback
+    console.warn('[Security] Invalid URL format, using safe fallback:', target);
+    url = new URL('/checkout/success', PUBLIC_BASE_URL);
+  }
+
+  // SECURITY: Validate against allowlist
+  if (!ALLOWED_REDIRECT_HOSTS.includes(url.hostname)) {
+    console.warn('[Security] Blocked redirect to untrusted host:', url.hostname);
+    // Use safe internal success page
+    url = new URL('/checkout/success', PUBLIC_BASE_URL);
+  }
+
+  // Add extra parameters
   Object.entries(extraParams).forEach(([key, value]) => {
     if (value) url.searchParams.set(key, value);
   });
@@ -46,7 +76,9 @@ export const load: PageServerLoad = ({ params }) => {
 
 // Form actions
 export const actions = {
-  // Handle card payment with tokenized card (PCI-compliant)
+  // Handle card payment with tokenized card
+  // SECURITY NOTE: Due to Beam API design, CVV must pass through server (not included in token)
+  // CVV is held in memory only, never logged or stored, and sent directly to Beam
   payWithCard: async ({ request, params }) => {
     const { slug } = params;
 
@@ -60,11 +92,9 @@ export const actions = {
     const formData = await request.formData();
     const cardToken = formData.get('cardToken')?.toString() || '';
     const securityCode = formData.get('securityCode')?.toString() || '';
-    const cardHolderName = formData.get('cardHolderName')?.toString() || '';
-    const last4 = formData.get('last4')?.toString() || '';
-    const brand = formData.get('brand')?.toString() || '';
 
-    // Basic validation - token and CVV are required
+    // SECURITY: Basic validation only - token and CVV are required
+    // Do NOT log or process CVV beyond validation
     if (!cardToken || !securityCode) {
       return fail(400, { error: 'Card token and security code are required.' });
     }
@@ -73,11 +103,12 @@ export const actions = {
     const referenceId = `order_${slug}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const successUrl = product.successUrl || '/checkout/success';
 
-    // Log non-sensitive card metadata for debugging (safe - no CVV logged)
-    console.log(`[Payment] Processing card payment: brand=${brand}, last4=****${last4}, ref=${referenceId}`);
+    // SECURITY: Only log non-sensitive transaction metadata (no card data, no CVV)
+    console.log(`[Payment] Processing tokenized card payment: ref=${referenceId}`);
 
     try {
       // Create charge with Beam using the token
+      // SECURITY: securityCode is passed directly to Beam, never logged or stored
       const charge = await createCharge({
         amount: product.price, // Already in satang
         currency: 'THB',
@@ -85,7 +116,7 @@ export const actions = {
           paymentMethodType: 'CARD_TOKEN',
           cardToken: {
             cardTokenId: cardToken,
-            securityCode: securityCode // CVV required by Beam (not logged)
+            securityCode: securityCode // Required by Beam API (held in memory only)
           }
         },
         referenceId,
@@ -121,12 +152,10 @@ export const actions = {
       ) {
         throw err;
       }
-      console.error('Card payment error:', err instanceof Error ? err.message : 'Unknown error');
+      // SECURITY: Log error without exposing sensitive details
+      console.error('[Payment] Card payment failed:', err instanceof Error ? err.message : 'Unknown error');
       return fail(500, {
-        error:
-          err instanceof Error
-            ? `Payment failed: ${err.message}`
-            : 'Payment failed. Please try again.'
+        error: 'Payment failed. Please try again or contact support.'
       });
     }
   },

@@ -373,7 +373,7 @@
                   const formElement = event.currentTarget as HTMLFormElement;
                   const formData = new FormData(formElement);
 
-                  // Get card data from form
+                  // SECURITY: Extract card data from form
                   const cardNumberRaw = formData.get('cardNumber')?.toString() || '';
                   const pan = cardNumberRaw.replace(/\s/g, ''); // Remove spaces
                   const expiryMonth = parseInt(formData.get('expiryMonth')?.toString() || '0');
@@ -386,7 +386,7 @@
                     throw new Error('All card fields are required');
                   }
 
-                  // Tokenize the card on the client-side (PCI-compliant)
+                  // SECURITY: Tokenize PAN/expiry with Beam (never touches our server)
                   const tokenResponse = await tokenizeCard({
                     pan,
                     expiryMonth,
@@ -394,19 +394,17 @@
                     cardHolderName
                   });
 
-                  // Create new FormData with token and CVV (CVV required by Beam)
+                  // SECURITY: Clear card form fields immediately after tokenization
+                  formElement.reset();
+                  cardNumber = '';
+                  expiryDate = '';
+
+                  // SECURITY: Send only token + CVV to server
+                  // NOTE: Due to Beam API design, CVV cannot be included in token
+                  // and must be sent separately when creating the charge
                   const tokenizedFormData = new FormData();
                   tokenizedFormData.set('cardToken', tokenResponse.id);
-                  tokenizedFormData.set('securityCode', securityCode); // CVV required for charge
-                  tokenizedFormData.set('cardHolderName', cardHolderName);
-                  // Get last 4 digits for display/logging (non-sensitive)
-                  tokenizedFormData.set('last4', pan.slice(-4));
-                  // Card brand detection (basic)
-                  const firstDigit = pan[0];
-                  let brand = 'UNKNOWN';
-                  if (firstDigit === '4') brand = 'VISA';
-                  else if (firstDigit === '5') brand = 'MASTERCARD';
-                  tokenizedFormData.set('brand', brand);
+                  tokenizedFormData.set('securityCode', securityCode); // Required by Beam API
 
                   // Submit the form with token
                   const response = await fetch('?/payWithCard', {
