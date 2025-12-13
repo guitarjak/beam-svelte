@@ -212,11 +212,6 @@
   });
 </script>
 
-<svelte:head>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</svelte:head>
 
 <!-- Premium checkout page with asymmetric 7-5 grid and trust signals -->
 <div class="checkout-container">
@@ -399,12 +394,13 @@
                   cardNumber = '';
                   expiryDate = '';
 
-                  // SECURITY: Send only token + CVV to server
+                  // SECURITY: Send only token + CVV + email to server
                   // NOTE: Due to Beam API design, CVV cannot be included in token
                   // and must be sent separately when creating the charge
                   const tokenizedFormData = new FormData();
                   tokenizedFormData.set('cardToken', tokenResponse.id);
                   tokenizedFormData.set('securityCode', securityCode); // Required by Beam API
+                  tokenizedFormData.set('email', email); // Send email to server
 
                   // Submit the form with token
                   const response = await fetch('?/payWithCard', {
@@ -614,6 +610,7 @@
                   };
                 }}
               >
+                <input type="hidden" name="email" bind:value={email} />
                 <button
                   type="submit"
                   class="cta-button secondary"
@@ -649,6 +646,7 @@
                   };
                 }}
               >
+                <input type="hidden" name="email" bind:value={email} />
                 <button
                   type="submit"
                   class="cta-button primary"

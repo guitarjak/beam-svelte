@@ -24,33 +24,42 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Resolve the request
   const response = await resolve(event);
 
-  // SECURITY: Add Content Security Policy headers
-  // Restrict script sources, API connections, and frame sources
+  // SECURITY: Content Security Policy - balanced for SvelteKit compatibility
+  // Note: SvelteKit requires unsafe-inline for both scripts and styles
+  // - Scripts: Required for hydration data injection
+  // - Styles: Required for component transitions and dynamic styles
+  // See: https://github.com/sveltejs/kit/issues/5215
   const cspDirectives = [
-    // Script sources: self + inline (for SvelteKit hydration)
-    // TODO: Remove 'unsafe-inline' by extracting inline scripts to separate files
-    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // Script sources: self + unsafe-inline (required for SvelteKit hydration)
+    "script-src 'self' 'unsafe-inline'",
 
-    // API connections: self + Beam payment API
+    // API connections: self + Beam payment API only
     "connect-src 'self' https://api.beamcheckout.com https://playground.api.beamcheckout.com",
 
-    // Styles: self + inline + Google Fonts
+    // Styles: self + unsafe-inline + Google Fonts
+    // unsafe-inline required for SvelteKit component transitions/dynamic styles
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 
-    // Fonts: self + Google Fonts
+    // Fonts: self + Google Fonts CDN
     "font-src 'self' https://fonts.gstatic.com",
 
     // Images: self + data URIs (for QR codes)
     "img-src 'self' data:",
 
-    // Frames: none (no iframes needed)
+    // Frames: none
     "frame-src 'none'",
 
-    // Base URI: self only
+    // Base URI: self only (prevents base tag injection)
     "base-uri 'self'",
 
-    // Form actions: self only
+    // Form actions: self only (prevents form hijacking)
     "form-action 'self'",
+
+    // Object/embed: none (no Flash, etc)
+    "object-src 'none'",
+
+    // Upgrade insecure requests in production
+    // "upgrade-insecure-requests",
 
     // Default fallback: self only
     "default-src 'self'"
@@ -63,6 +72,9 @@ export const handle: Handle = async ({ event, resolve }) => {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Permissions Policy (limit browser features)
+  response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
   return response;
 };

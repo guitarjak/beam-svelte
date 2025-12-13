@@ -1,0 +1,4 @@
+/* Global styles */
+.sveltekit-root > div {
+  display: contents;
+}

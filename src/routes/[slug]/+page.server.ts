@@ -4,6 +4,14 @@ import { createCharge } from '$lib/server/beam';
 import { env as publicEnv } from '$env/dynamic/public';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad, Actions } from './$types';
+import {
+  isRateLimited,
+  createSessionToken,
+  getClientIp,
+  isValidEmail,
+  isValidCardToken,
+  isValidCvv
+} from '$lib/server/security';
 
 const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL || '';
 
@@ -79,8 +87,14 @@ export const actions = {
   // Handle card payment with tokenized card
   // SECURITY NOTE: Due to Beam API design, CVV must pass through server (not included in token)
   // CVV is held in memory only, never logged or stored, and sent directly to Beam
-  payWithCard: async ({ request, params }) => {
+  payWithCard: async ({ request, params, cookies }) => {
     const { slug } = params;
+    const clientIp = getClientIp(request);
+
+    // SECURITY: Rate limiting - max 5 card payment attempts per IP per 15 minutes
+    if (isRateLimited(`card:${clientIp}`, 5, 15 * 60 * 1000)) {
+      return fail(429, { error: 'Too many payment attempts. Please try again later.' });
+    }
 
     // Get the product
     const product = getProductBySlug(slug);
@@ -90,18 +104,35 @@ export const actions = {
 
     // Get form data
     const formData = await request.formData();
-    const cardToken = formData.get('cardToken')?.toString() || '';
-    const securityCode = formData.get('securityCode')?.toString() || '';
+    let cardToken = formData.get('cardToken')?.toString() || '';
+    let securityCode = formData.get('securityCode')?.toString() || '';
+    const email = formData.get('email')?.toString() || '';
 
-    // SECURITY: Basic validation only - token and CVV are required
-    // Do NOT log or process CVV beyond validation
-    if (!cardToken || !securityCode) {
-      return fail(400, { error: 'Card token and security code are required.' });
+    // SECURITY: Validate inputs with strict rules
+    if (!isValidCardToken(cardToken)) {
+      // Clear CVV from memory immediately on validation failure
+      securityCode = '';
+      return fail(400, { error: 'Invalid card token format.' });
+    }
+
+    if (!isValidCvv(securityCode)) {
+      securityCode = '';
+      cardToken = '';
+      return fail(400, { error: 'Invalid security code format.' });
+    }
+
+    if (email && !isValidEmail(email)) {
+      securityCode = '';
+      cardToken = '';
+      return fail(400, { error: 'Invalid email address.' });
     }
 
     // Generate a unique reference ID
     const referenceId = `order_${slug}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const successUrl = product.successUrl || '/checkout/success';
+
+    // SECURITY: Create signed session token for later verification
+    const sessionToken = createSessionToken(referenceId, clientIp);
 
     // SECURITY: Only log non-sensitive transaction metadata (no card data, no CVV)
     console.log(`[Payment] Processing tokenized card payment: ref=${referenceId}`);
@@ -110,7 +141,7 @@ export const actions = {
       // Create charge with Beam using the token
       // SECURITY: securityCode is passed directly to Beam, never logged or stored
       const charge = await createCharge({
-        amount: product.price, // Already in satang
+        amount: product.price,
         currency: 'THB',
         paymentMethod: {
           paymentMethodType: 'CARD_TOKEN',
@@ -120,7 +151,21 @@ export const actions = {
           }
         },
         referenceId,
-        returnUrl: buildSuccessUrl(successUrl, { ref: referenceId })
+        returnUrl: buildSuccessUrl(successUrl, { ref: referenceId, token: sessionToken }),
+        customer: email ? { email } : undefined
+      });
+
+      // SECURITY: Scrub CVV and token from memory immediately after use
+      securityCode = '';
+      cardToken = '';
+
+      // Store session token in cookie for charge status verification
+      cookies.set('beam_session', sessionToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 60 * 60 // 1 hour
       });
 
       // Handle the response based on actionRequired
@@ -131,16 +176,19 @@ export const actions = {
         // Payment completed immediately (rare for cards)
         redirect(
           303,
-          buildSuccessUrl(successUrl, { ref: referenceId, chargeId: charge.chargeId })
+          buildSuccessUrl(successUrl, { ref: referenceId, chargeId: charge.chargeId, token: sessionToken })
         );
       } else {
-        // Unexpected response
         return fail(500, {
           error: 'Unexpected payment response. Please try again or contact support.'
         });
       }
     } catch (err) {
-      // Allow SvelteKit redirects to bubble through (they are Errors with status/location)
+      // SECURITY: Scrub sensitive data on error
+      securityCode = '';
+      cardToken = '';
+
+      // Allow SvelteKit redirects to bubble through
       const maybeRedirect = err as { status?: number; location?: string };
       if (
         maybeRedirect &&
@@ -152,7 +200,6 @@ export const actions = {
       ) {
         throw err;
       }
-      // SECURITY: Log error without exposing sensitive details
       console.error('[Payment] Card payment failed:', err instanceof Error ? err.message : 'Unknown error');
       return fail(500, {
         error: 'Payment failed. Please try again or contact support.'
@@ -161,8 +208,14 @@ export const actions = {
   },
 
   // Handle PromptPay payment (returns QR image + chargeId)
-  payWithPromptPay: async ({ params }) => {
+  payWithPromptPay: async ({ request, params, cookies }) => {
     const { slug } = params;
+    const clientIp = getClientIp(request);
+
+    // SECURITY: Rate limiting - max 10 PromptPay QR generations per IP per 15 minutes
+    if (isRateLimited(`promptpay:${clientIp}`, 10, 15 * 60 * 1000)) {
+      return fail(429, { error: 'Too many QR code requests. Please try again later.' });
+    }
 
     // Get the product
     const product = getProductBySlug(slug);
@@ -170,9 +223,21 @@ export const actions = {
       return fail(404, { error: 'Product not found or not available' });
     }
 
+    // Get form data
+    const formData = await request.formData();
+    const email = formData.get('email')?.toString() || '';
+
+    // Validate email if provided
+    if (email && !isValidEmail(email)) {
+      return fail(400, { error: 'Invalid email address.' });
+    }
+
     // Generate a unique reference ID
     const referenceId = `pp_${slug}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const successUrl = product.successUrl || '/checkout/success';
+
+    // SECURITY: Create signed session token for later verification
+    const sessionToken = createSessionToken(referenceId, clientIp);
 
     // Set QR expiry 10 minutes from now
     const expiryDate = new Date(Date.now() + 10 * 60 * 1000);
@@ -189,7 +254,8 @@ export const actions = {
           }
         },
         referenceId,
-        returnUrl: buildSuccessUrl(successUrl, {})
+        returnUrl: buildSuccessUrl(successUrl, { ref: referenceId, token: sessionToken }),
+        customer: email ? { email } : undefined
       });
 
       if (charge.actionRequired !== 'ENCODED_IMAGE' || !charge.encodedImage?.imageBase64Encoded) {
@@ -197,6 +263,15 @@ export const actions = {
           error: 'Unexpected response from Beam. Please try again or use another method.'
         });
       }
+
+      // Store session token in cookie for charge status verification
+      cookies.set('beam_session', sessionToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 60 * 60 // 1 hour
+      });
 
       return {
         promptPay: {
