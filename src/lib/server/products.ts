@@ -9,6 +9,8 @@ export type Product = {
   currency: string;
   active: boolean;
   successUrl?: string; // Optional per-product success redirect
+  imageUrl?: string; // Optional product image
+  logoUrl?: string; // Optional brand logo
 };
 
 // Load all products from JSON

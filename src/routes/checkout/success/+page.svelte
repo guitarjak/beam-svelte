@@ -57,29 +57,34 @@
 </div>
 
 <style>
+  /* ========================================
+     MOBILE BASE STYLES (320px+)
+     ======================================== */
+
   .success-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #f3f4f6;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .success-card {
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 3rem 2rem;
+    padding: 2rem 1.5rem;
     max-width: 500px;
     width: 100%;
     text-align: center;
   }
 
+  /* Success icon - mobile */
   .success-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 2rem;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1.5rem;
     color: #10b981;
   }
 
@@ -89,16 +94,16 @@
   }
 
   h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: #111827;
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.875rem 0;
   }
 
   .success-message {
-    font-size: 1.125rem;
+    font-size: 1rem;
     color: #6b7280;
-    margin: 0 0 2rem 0;
+    margin: 0 0 1.5rem 0;
     line-height: 1.6;
   }
 
@@ -111,7 +116,7 @@
   }
 
   .info-label {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: #6b7280;
     margin: 0 0 0.5rem 0;
     font-weight: 500;
@@ -119,24 +124,29 @@
 
   .info-value {
     font-family: 'Courier New', monospace;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: #111827;
     margin: 0;
     word-break: break-all;
   }
 
   .actions {
-    margin: 2rem 0 1.5rem;
+    margin: 1.5rem 0 1.25rem;
   }
 
+  /* Button with touch target */
   .btn {
     display: inline-block;
-    padding: 1rem 2rem;
-    font-size: 1.125rem;
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
     border-radius: 8px;
     transition: all 0.2s;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .btn-primary {
@@ -151,23 +161,60 @@
   }
 
   .help-text {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: #9ca3af;
     margin: 0;
+    line-height: 1.5;
   }
 
-  @media (max-width: 640px) {
-    .success-card {
-      padding: 2rem 1.5rem;
+  /* ========================================
+     TABLET BREAKPOINT (md: 768px+)
+     ======================================== */
+
+  @media (min-width: 768px) {
+    .success-container {
+      padding: 2rem 1rem;
     }
 
-    h1 {
-      font-size: 1.5rem;
+    .success-card {
+      padding: 3rem 2rem;
     }
 
     .success-icon {
-      width: 60px;
-      height: 60px;
+      width: 80px;
+      height: 80px;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .success-message {
+      font-size: 1.125rem;
+      margin-bottom: 2rem;
+    }
+
+    .info-label {
+      font-size: 0.875rem;
+    }
+
+    .info-value {
+      font-size: 0.875rem;
+    }
+
+    .actions {
+      margin: 2rem 0 1.5rem;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      font-size: 1.125rem;
+    }
+
+    .help-text {
+      font-size: 0.875rem;
     }
   }
 </style>

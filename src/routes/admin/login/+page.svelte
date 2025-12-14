@@ -48,6 +48,10 @@
 </div>
 
 <style>
+  /* ========================================
+     MOBILE BASE STYLES (320px+)
+     ======================================== */
+
   .login-container {
     min-height: 100vh;
     display: flex;
@@ -61,14 +65,14 @@
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
+    padding: 1.5rem;
     width: 100%;
     max-width: 400px;
   }
 
   h1 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.75rem;
+    margin: 0 0 1.25rem 0;
+    font-size: 1.5rem;
     text-align: center;
     color: #111827;
   }
@@ -81,6 +85,8 @@
     border-radius: 4px;
     margin-bottom: 1rem;
     text-align: center;
+    font-size: 0.875rem;
+    line-height: 1.5;
   }
 
   .form-group {
@@ -92,15 +98,18 @@
     margin-bottom: 0.5rem;
     font-weight: 500;
     color: #374151;
+    font-size: 0.875rem;
   }
 
+  /* Input with touch target */
   input {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.875rem;
     border: 1px solid #d1d5db;
     border-radius: 4px;
     font-size: 1rem;
     box-sizing: border-box;
+    min-height: 48px;
   }
 
   input:focus {
@@ -109,9 +118,10 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
+  /* Submit button with touch target */
   .btn-submit {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.875rem;
     background: #3b82f6;
     color: white;
     border: none;
@@ -120,23 +130,45 @@
     font-weight: 600;
     cursor: pointer;
     margin-top: 0.5rem;
+    min-height: 48px;
   }
 
   .btn-submit:hover {
     background: #2563eb;
   }
 
+  /* Back link with touch target */
   .back-link {
     display: block;
     text-align: center;
     margin-top: 1rem;
+    padding: 0.5rem;
     color: #6b7280;
     text-decoration: none;
     font-size: 0.875rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .back-link:hover {
     color: #111827;
     text-decoration: underline;
+  }
+
+  /* ========================================
+     TABLET BREAKPOINT (md: 768px+)
+     ======================================== */
+
+  @media (min-width: 768px) {
+    .login-card {
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
   }
 </style>

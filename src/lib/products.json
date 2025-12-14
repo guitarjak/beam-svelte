@@ -7,7 +7,8 @@
     "currency": "THB",
     "active": true,
     "successUrl": "https://www.jakkrapat.com",
-    "imageUrl": "/images/products/super-productivity.JPG"
+    "imageUrl": "/images/products/super-productivity.JPG",
+    "logoUrl": "/images/products/w1w-site-logo.png"
   },
   {
     "slug": "product-2",
@@ -17,6 +18,7 @@
     "currency": "THB",
     "active": true,
     "successUrl": "https://www.google.com",
-    "imageUrl": ""
+    "imageUrl": "",
+    "logoUrl": ""
   }
 ]

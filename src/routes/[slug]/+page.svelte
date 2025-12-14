@@ -218,6 +218,13 @@
   <!-- Left side: Product showcase (60% - 7 columns) -->
   <div class="product-showcase">
     <div class="showcase-content">
+      <!-- Brand Logo -->
+      {#if data.product.logoUrl}
+        <div class="brand-logo-container">
+          <img src={data.product.logoUrl} alt="Brand Logo" class="brand-logo" />
+        </div>
+      {/if}
+
       <!-- Product details -->
       <div class="product-details">
         <!-- Product hero section -->
@@ -660,61 +667,17 @@
         {/if}
         {/key}
 
-        <!-- Security notice -->
-        <div class="security-notice">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-          </svg>
-          <span>Your payment information is encrypted and secure</span>
-        </div>
-
         <!-- Powered by Beam badge -->
         <div class="stripe-badge" style="margin-top: 1rem;">
-          <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke-width="2"/>
-            <path d="M7 11V7a5 5 0 0110 0v4" stroke-width="2"/>
-          </svg>
-          <span>Secure checkout powered by <strong>Beam</strong></span>
+          <span>Powered by <a href="https://beamcheckout.com/th" target="_blank" rel="noopener noreferrer" class="beam-link"><strong>Beam</strong></a> | <a href="https://beamcheckout.com/tncs" target="_blank" rel="noopener noreferrer" class="beam-link">Terms</a> · <a href="https://beamcheckout.com/privacy" target="_blank" rel="noopener noreferrer" class="beam-link">Privacy</a></span>
         </div>
-
-        <!-- Security badges -->
-        <div class="security-badges-checkout">
-          <div class="badge-checkout">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1 14.93h2V19h-2v-2.07zM13 14h-2V6h2v8z"/>
-            </svg>
-            <div>
-              <div class="badge-title">SSL Encrypted</div>
-              <div class="badge-subtitle">Secure 256-bit</div>
-            </div>
-          </div>
-          <div class="badge-checkout">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            <div>
-              <div class="badge-title">GDPR Compliant</div>
-              <div class="badge-subtitle">EU protected</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="checkout-footer">
-      <div class="footer-links">
-        <a href="https://beamcheckout.com/tncs" rel="noopener noreferrer">Terms</a>
-        <span class="divider">·</span>
-        <a href="https://beamcheckout.com/privacy" rel="noopener noreferrer">Privacy</a>
-        <span class="divider">·</span>
-        <a href="mailto:support@beamcheckout.com">Support</a>
       </div>
     </div>
   </div>
 </div>
 
 <style>
+  /* CSS Variables */
   :root {
     --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -752,25 +715,29 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Main container with asymmetric 7-5 grid (60/40 split) */
+  /* ========================================
+     MOBILE BASE STYLES (320px+)
+     ======================================== */
+
+  /* Main container - mobile vertical stack */
   .checkout-container {
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
     background: linear-gradient(135deg, var(--slate-50) 0%, #fefefe 100%);
-    overflow: hidden;
+    overflow: visible;
   }
 
-  /* Left side: Product showcase (60%) */
+  /* Product showcase - mobile */
   .product-showcase {
     background: linear-gradient(165deg, var(--slate-900) 0%, var(--slate-800) 50%, var(--slate-900) 100%);
-    padding: 4rem 5rem;
+    padding: 3rem 2.5rem 2rem;
     position: relative;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
     display: flex;
     align-items: center;
-    height: 100vh;
+    justify-content: center;
+    min-height: auto;
   }
 
   .product-showcase::before {
@@ -806,14 +773,31 @@
     }
   }
 
-  /* Product hero with gradient orbs */
+  /* Brand logo - showcase section - mobile */
+  .brand-logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .brand-logo {
+    max-width: 160px;
+    max-height: 50px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* Product hero with gradient orbs - mobile */
   .product-hero {
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
   }
 
   .product-image-wrapper {
-    width: 280px;
-    height: 280px;
+    width: 180px;
+    height: 180px;
     margin: 0 auto;
     position: relative;
     display: flex;
@@ -824,32 +808,32 @@
   .gradient-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(50px);
-    opacity: 0.6;
+    filter: blur(30px);
+    opacity: 0.5;
     animation: float 8s ease-in-out infinite;
   }
 
   .orb-1 {
-    width: 220px;
-    height: 220px;
+    width: 140px;
+    height: 140px;
     background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    top: -20px;
-    left: -20px;
+    top: -10px;
+    left: -10px;
     animation-delay: 0s;
   }
 
   .orb-2 {
-    width: 180px;
-    height: 180px;
+    width: 120px;
+    height: 120px;
     background: linear-gradient(135deg, #ec4899, #f43f5e);
-    bottom: -10px;
-    right: -10px;
+    bottom: -5px;
+    right: -5px;
     animation-delay: 1s;
   }
 
   .orb-3 {
-    width: 200px;
-    height: 200px;
+    width: 130px;
+    height: 130px;
     background: linear-gradient(135deg, #06b6d4, #3b82f6);
     top: 50%;
     left: 50%;
@@ -862,42 +846,42 @@
       transform: translateY(0) scale(1);
     }
     50% {
-      transform: translateY(-20px) scale(1.05);
+      transform: translateY(-15px) scale(1.05);
     }
   }
 
   .product-icon {
-    width: 180px;
-    height: 180px;
+    width: 120px;
+    height: 120px;
     background: var(--slate-800);
-    border: 3px solid var(--slate-700);
+    border: 2px solid var(--slate-700);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     z-index: 2;
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+    box-shadow: 0 15px 30px -8px rgb(0 0 0 / 0.5);
   }
 
   .product-icon svg {
-    width: 90px;
-    height: 90px;
+    width: 60px;
+    height: 60px;
     color: var(--slate-200);
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
   }
 
-  /* Product image container and styling */
+  /* Product image container - mobile */
   .product-image-container {
-    width: 280px;
-    height: 280px;
-    border-radius: 1rem;
+    width: 180px;
+    height: 180px;
+    border-radius: 0.75rem;
     overflow: hidden;
     position: relative;
     z-index: 2;
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+    box-shadow: 0 15px 30px -8px rgb(0 0 0 / 0.5);
     background: var(--slate-800);
-    border: 3px solid var(--slate-700);
+    border: 2px solid var(--slate-700);
   }
 
   .product-image {
@@ -908,39 +892,39 @@
     display: block;
   }
 
-  /* Product details */
+  /* Product details - mobile */
   .product-details {
     color: white;
   }
 
   .product-name {
     font-family: var(--font-display);
-    font-size: 2.75rem;
+    font-size: 1.75rem;
     font-weight: 800;
     line-height: 1.2;
-    margin: 0 0 1rem;
+    margin: 0 0 0.75rem;
     color: white;
     letter-spacing: -0.02em;
   }
 
   .product-description {
-    font-size: 1.125rem;
-    line-height: 1.7;
+    font-size: 0.9375rem;
+    line-height: 1.6;
     color: var(--slate-300);
-    margin: 0 0 2rem;
+    margin: 0 0 1.5rem;
   }
 
-  /* Price container */
+  /* Price container - mobile */
   .price-container {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 2rem 0 0;
+    gap: 0.5rem;
+    padding: 1.5rem 0 0;
     border-top: 1px solid var(--slate-700);
   }
 
   .price-label {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--slate-400);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -949,75 +933,91 @@
 
   .price-value {
     font-family: var(--font-display);
-    font-size: 3.5rem;
+    font-size: 2rem;
     font-weight: 800;
     color: white;
     letter-spacing: -0.03em;
   }
 
-  /* Right side: Checkout form (40%) */
+  /* Checkout form section - mobile */
   .checkout-form-section {
     display: flex;
     flex-direction: column;
     background: white;
     position: relative;
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    min-height: auto;
+    overflow: visible;
   }
 
   .form-content {
     flex: 1;
-    padding: 4rem 3rem;
-    max-width: 520px;
+    padding: 2rem 1.25rem;
+    max-width: 100%;
     margin: 0 auto;
     width: 100%;
-    min-height: min-content;
   }
 
-  /* Stripe badge */
+  /* Stripe badge - mobile */
   .stripe-badge {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.875rem 1.25rem;
-    background: var(--slate-50);
-    border: 1px solid var(--slate-200);
-    border-radius: 0.75rem;
-    margin-bottom: 2.5rem;
-    font-size: 0.875rem;
-    color: var(--slate-700);
+    margin-bottom: 2rem;
+    font-size: 0.75rem;
+    color: var(--slate-500);
+    text-align: center;
   }
 
   .lock-icon {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 1rem;
+    height: 1rem;
     color: var(--slate-500);
     flex-shrink: 0;
   }
 
   .stripe-badge strong {
-    font-weight: 700;
-    color: #635bff;
+    font-weight: 600;
+    color: var(--slate-700);
   }
 
-  /* Form sections */
+  .beam-link {
+    color: #08154d;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .beam-link strong {
+    color: #08154d;
+  }
+
+  .beam-link:hover {
+    opacity: 0.7;
+  }
+
+  /* Form sections - mobile */
   .form-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
   }
 
   .section-title {
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--slate-900);
-    margin: 0 0 1.25rem;
+    margin: 0 0 1rem;
     letter-spacing: -0.02em;
   }
 
-  /* Input groups */
+  /* Input groups - mobile */
   .input-group {
     margin-bottom: 1.25rem;
+  }
+
+  /* Custom spacing for cardholder name */
+  .card-form > .input-group:last-of-type {
+    margin-top: -0.75rem;
+    margin-bottom: 1rem;
   }
 
   .input-label {
@@ -1029,10 +1029,11 @@
     letter-spacing: -0.01em;
   }
 
+  /* Form inputs - mobile with touch targets */
   .form-input {
     width: 100%;
-    padding: 0.875rem 1rem;
-    font-size: 1rem;
+    padding: 0.75rem;
+    font-size: 0.9375rem;
     font-family: var(--font-body);
     color: var(--slate-900);
     background: white;
@@ -1040,6 +1041,7 @@
     border-radius: 0.5rem;
     transition: all 0.2s ease;
     box-sizing: border-box;
+    min-height: 40px;
   }
 
   .form-input::placeholder {
@@ -1084,7 +1086,7 @@
     font-weight: 500;
   }
 
-  /* Payment methods */
+  /* Payment methods - mobile */
   .payment-methods {
     display: flex;
     flex-direction: column;
@@ -1095,8 +1097,8 @@
   .payment-option {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
+    gap: 0.7rem;
+    padding: 0.8rem;
     background: white;
     border: 1.5px solid var(--slate-300);
     border-radius: 0.75rem;
@@ -1105,6 +1107,7 @@
     font-family: var(--font-body);
     width: 100%;
     text-align: left;
+    min-height: 45px;
   }
 
   .payment-option:hover {
@@ -1151,8 +1154,8 @@
   }
 
   .payment-icon {
-    width: 2rem;
-    height: 2rem;
+    width: 1.875rem;
+    height: 1.875rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1269,6 +1272,7 @@
 
   .card-expiry-cvc-grid input:first-child {
     border-right: none;
+    border-top-left-radius: 0;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0.5rem;
@@ -1276,6 +1280,7 @@
 
   .card-expiry-cvc-grid input:last-child {
     border-top-left-radius: 0;
+    border-top-right-radius: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0.5rem;
   }
@@ -1287,11 +1292,11 @@
 
   .card-details-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr;
     gap: 0.75rem;
   }
 
-  /* CTA Buttons */
+  /* CTA Buttons - mobile with touch targets */
   .cta-button {
     width: 100%;
     padding: 1rem 1.5rem;
@@ -1307,6 +1312,7 @@
     justify-content: center;
     gap: 0.5rem;
     letter-spacing: -0.01em;
+    min-height: 48px;
   }
 
   .cta-button.primary {
@@ -1342,13 +1348,13 @@
     cursor: not-allowed;
   }
 
-  /* PromptPay instructions */
+  /* PromptPay instructions - mobile */
   .promptpay-instructions {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.875rem;
     margin-bottom: 1.5rem;
-    padding: 1.25rem;
+    padding: 1rem;
     background: var(--slate-50);
     border: 1px solid var(--slate-200);
     border-radius: 0.75rem;
@@ -1369,13 +1375,13 @@
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding-top: 1rem;
+    padding-top: 0.875rem;
     border-top: 1px solid var(--slate-200);
   }
 
   .step-icon {
-    width: 2rem;
-    height: 2rem;
+    width: 1.75rem;
+    height: 1.75rem;
     color: var(--slate-500);
     flex-shrink: 0;
   }
@@ -1384,16 +1390,16 @@
     font-size: 0.875rem;
     line-height: 1.6;
     color: var(--slate-600);
-    margin: 0.25rem 0 0 0;
+    margin: 0.125rem 0 0 0;
   }
 
-  /* QR Code display */
+  /* QR Code display - mobile */
   .qr-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    padding: 2rem;
+    gap: 0.875rem;
+    padding: 1.5rem;
     background: var(--slate-50);
     border: 1px solid var(--slate-200);
     border-radius: 1rem;
@@ -1408,13 +1414,13 @@
   }
 
   .qr-code {
-    width: 240px;
-    height: 240px;
+    width: 200px;
+    height: 200px;
     display: block;
   }
 
   .qr-instructions {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--slate-700);
     text-align: center;
     font-weight: 500;
@@ -1486,10 +1492,10 @@
     flex-shrink: 0;
   }
 
-  /* Security badges in checkout form */
+  /* Security badges - mobile stack */
   .security-badges-checkout {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
     margin-top: 1.5rem;
   }
@@ -1534,9 +1540,9 @@
     line-height: 1.3;
   }
 
-  /* Footer */
+  /* Footer - mobile */
   .checkout-footer {
-    padding: 1.5rem 3rem;
+    padding: 1.25rem;
     border-top: 1px solid var(--slate-200);
   }
 
@@ -1544,7 +1550,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     font-size: 0.8125rem;
   }
 
@@ -1562,30 +1569,18 @@
     color: var(--slate-300);
   }
 
-  /* Responsive design - Mobile first */
-  @media (max-width: 1024px) {
-    .checkout-container {
-      grid-template-columns: 1fr;
-      height: auto;
-      overflow: visible;
-    }
+  /* ========================================
+     TABLET BREAKPOINT (md: 768px+)
+     ======================================== */
 
-    .product-showcase {
-      height: auto;
-      overflow: visible;
-    }
-
-    .checkout-form-section {
-      height: auto;
-      overflow: visible;
-    }
-
+  @media (min-width: 768px) {
     .product-showcase {
       padding: 3rem 2rem;
     }
 
-    .showcase-content {
-      max-width: 100%;
+    .brand-logo {
+      max-width: 200px;
+      max-height: 60px;
     }
 
     .product-image-wrapper {
@@ -1610,6 +1605,16 @@
 
     .product-name {
       font-size: 2.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .product-description {
+      font-size: 1.0625rem;
+    }
+
+    .price-container {
+      gap: 0.75rem;
+      padding-top: 2rem;
     }
 
     .price-value {
@@ -1617,49 +1622,277 @@
     }
 
     .form-content {
-      padding: 2.5rem 1.5rem;
-    }
-
-    .security-badges-checkout {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .product-showcase {
-      padding: 2rem 1.25rem;
-    }
-
-    .product-name {
-      font-size: 1.875rem;
-    }
-
-    .product-description {
-      font-size: 1rem;
-    }
-
-    .price-value {
-      font-size: 2.25rem;
-    }
-
-    .form-content {
-      padding: 2rem 1.25rem;
+      padding: 2.5rem 2rem;
+      max-width: 540px;
     }
 
     .section-title {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
-    .card-details-grid {
-      grid-template-columns: 2fr 1fr 1fr;
+    .qr-code {
+      width: 220px;
+      height: 220px;
     }
 
-    .checkout-footer {
-      padding: 1.25rem 1.25rem;
+    .qr-instructions {
+      font-size: 0.9375rem;
     }
 
     .security-badges-checkout {
-      grid-template-columns: 1fr;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card-details-grid {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .checkout-footer {
+      padding: 1.5rem 2rem;
+    }
+  }
+
+  /* ========================================
+     DESKTOP BREAKPOINT (lg: 1024px+)
+     ======================================== */
+
+  @media (min-width: 1024px) {
+    /* Switch to side-by-side grid layout */
+    .checkout-container {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .product-showcase {
+      padding: 4rem 3rem;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .showcase-content {
+      max-width: 600px;
+    }
+
+    .brand-logo {
+      max-width: 240px;
+      max-height: 70px;
+    }
+
+    .product-hero {
+      margin-bottom: 3rem;
+    }
+
+    .product-image-wrapper {
+      width: 260px;
+      height: 260px;
+    }
+
+    .gradient-orb {
+      filter: blur(45px);
+      opacity: 0.6;
+    }
+
+    .orb-1 {
+      width: 200px;
+      height: 200px;
+      top: -15px;
+      left: -15px;
+    }
+
+    .orb-2 {
+      width: 165px;
+      height: 165px;
+      bottom: -10px;
+      right: -10px;
+    }
+
+    .orb-3 {
+      width: 185px;
+      height: 185px;
+    }
+
+    .product-icon {
+      width: 170px;
+      height: 170px;
+      border: 3px solid var(--slate-700);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+    }
+
+    .product-icon svg {
+      width: 85px;
+      height: 85px;
+    }
+
+    .product-image-container {
+      width: 260px;
+      height: 260px;
+      border-radius: 1rem;
+      border: 3px solid var(--slate-700);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+    }
+
+    .product-name {
+      font-size: 2.5rem;
+    }
+
+    .product-description {
+      font-size: 1.125rem;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+
+    .price-value {
+      font-size: 3.25rem;
+    }
+
+    .checkout-form-section {
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .form-content {
+      padding: 3.5rem 2.5rem;
+      max-width: 520px;
+    }
+
+    .stripe-badge {
+      margin-bottom: 2.5rem;
+      font-size: 0.8125rem;
+    }
+
+    .lock-icon {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+
+    .form-section {
+      margin-bottom: 2.5rem;
+    }
+
+    .payment-option {
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+    }
+
+    .payment-icon {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .promptpay-instructions {
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .promptpay-step {
+      padding-top: 1rem;
+    }
+
+    .step-icon {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .qr-container {
+      gap: 1rem;
+      padding: 2rem;
+    }
+
+    .qr-code {
+      width: 240px;
+      height: 240px;
+    }
+
+    .checkout-footer {
+      padding: 1.5rem 2.5rem;
+    }
+
+    .footer-links {
+      gap: 0.75rem;
+    }
+  }
+
+  /* ========================================
+     LARGE DESKTOP BREAKPOINT (xl: 1280px+)
+     ======================================== */
+
+  @media (min-width: 1280px) {
+    .product-showcase {
+      padding: 4rem 5rem;
+    }
+
+    .product-image-wrapper {
+      width: 280px;
+      height: 280px;
+    }
+
+    .gradient-orb {
+      filter: blur(50px);
+    }
+
+    .orb-1 {
+      width: 220px;
+      height: 220px;
+      top: -20px;
+      left: -20px;
+    }
+
+    .orb-2 {
+      width: 180px;
+      height: 180px;
+    }
+
+    .orb-3 {
+      width: 200px;
+      height: 200px;
+    }
+
+    .product-icon {
+      width: 180px;
+      height: 180px;
+    }
+
+    .product-icon svg {
+      width: 90px;
+      height: 90px;
+    }
+
+    .product-image-container {
+      width: 280px;
+      height: 280px;
+    }
+
+    .product-name {
+      font-size: 2.75rem;
+    }
+
+    .price-value {
+      font-size: 3.5rem;
+    }
+
+    .form-content {
+      padding: 4rem 3rem;
+    }
+  }
+
+  /* ========================================
+     ACCESSIBILITY
+     ======================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .gradient-orb,
+    .showcase-content {
+      animation: none;
+    }
+
+    .payment-form {
+      animation: none;
     }
   }
 </style>
