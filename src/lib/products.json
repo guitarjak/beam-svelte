@@ -1,13 +1,13 @@
 [
   {
     "slug": "website1wun",
-    "name": "Ticket to Website1Wun",
-    "description": "ตั๋วเข้าร่วมขบวนการ Website1Wun ที่จะทำให้คุณสามารถสร้าง Website ได้ภายในวันเดียว แบบไม่ต้องมีพื้นฐานมาก่อน เย้",
+    "name": "Founder's Ticket",
+    "description": "ตั๋วพิเศษสำหรับสมาชิกรุ่นแรก เพื่อเข้าร่วมคลาส Website1Wun ที่จะทำให้คุณสามารถสร้าง Website ได้ภายในวันเดียว แบบไม่ต้องมีพื้นฐานมาก่อน เย้",
     "price": 149000,
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
-    "imageUrl": "/images/products/super-productivity.JPG",
+    "imageUrl": "/images/products/w1w-ticket.png",
     "logoUrl": "/images/products/w1w-site-logo.png",
     "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
     "successMessage": {
