@@ -826,8 +826,8 @@
     position: absolute;
     border-radius: 50%;
     filter: blur(30px);
-    opacity: 0.5;
-    animation: float 8s ease-in-out infinite;
+    opacity: 0;
+    will-change: opacity, transform;
   }
 
   .orb-1 {
@@ -836,7 +836,7 @@
     background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     top: -10px;
     left: -10px;
-    animation-delay: 0s;
+    animation: float1 10s ease-in-out infinite, fadeInOrb 0.5s ease-out forwards;
   }
 
   .orb-2 {
@@ -845,7 +845,7 @@
     background: linear-gradient(135deg, #ec4899, #f43f5e);
     bottom: -5px;
     right: -5px;
-    animation-delay: 1s;
+    animation: float2 12s ease-in-out infinite, fadeInOrb 0.5s ease-out forwards;
   }
 
   .orb-3 {
@@ -854,8 +854,34 @@
     background: linear-gradient(135deg, #06b6d4, #3b82f6);
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    animation-delay: 2s;
+    animation: floatCentered3 14s ease-in-out infinite, fadeInOrb 0.5s ease-out forwards;
+  }
+
+  @keyframes float1 {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-20px) scale(1.08);
+    }
+  }
+
+  @keyframes float2 {
+    0%, 100% {
+      transform: translateY(-10px) scale(1.02);
+    }
+    50% {
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  @keyframes floatCentered3 {
+    0%, 100% {
+      transform: translate(-50%, -50%) translateY(5px) scale(1.03);
+    }
+    50% {
+      transform: translate(-50%, -50%) translateY(-12px) scale(0.97);
+    }
   }
 
   @keyframes float {
@@ -864,6 +890,24 @@
     }
     50% {
       transform: translateY(-15px) scale(1.05);
+    }
+  }
+
+  @keyframes floatCentered {
+    0%, 100% {
+      transform: translate(-50%, -50%) translateY(0) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) translateY(-15px) scale(1.05);
+    }
+  }
+
+  @keyframes fadeInOrb {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 0.5;
     }
   }
 
@@ -1711,7 +1755,27 @@
 
     .gradient-orb {
       filter: blur(45px);
-      opacity: 0.6;
+    }
+
+    .orb-1 {
+      animation: float1 10s ease-in-out infinite, fadeInOrbDesktop 0.5s ease-out forwards;
+    }
+
+    .orb-2 {
+      animation: float2 12s ease-in-out infinite, fadeInOrbDesktop 0.5s ease-out forwards;
+    }
+
+    .orb-3 {
+      animation: floatCentered3 14s ease-in-out infinite, fadeInOrbDesktop 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeInOrbDesktop {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 0.6;
+      }
     }
 
     .orb-1 {
@@ -1906,6 +1970,10 @@
     .gradient-orb,
     .showcase-content {
       animation: none;
+    }
+
+    .gradient-orb {
+      opacity: 0.5;
     }
 
     .payment-form {
