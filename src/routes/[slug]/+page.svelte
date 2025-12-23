@@ -381,6 +381,12 @@
               on:submit|preventDefault={async (event) => {
                 if (isLoading) return;
 
+                // Validate email first
+                if (!email || email.trim() === '' || !isValidEmail(email)) {
+                  emailError = true;
+                  return;
+                }
+
                 isLoading = true;
                 try {
                   const formElement = event.currentTarget as HTMLFormElement;
