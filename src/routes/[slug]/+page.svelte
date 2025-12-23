@@ -379,6 +379,7 @@
               class="card-form"
               autocomplete="off"
               on:submit|preventDefault={async (event) => {
+                // PREVENT DOUBLE SUBMIT: Return immediately if already loading
                 if (isLoading) return;
 
                 // Validate email first
@@ -612,6 +613,11 @@
                 method="POST"
                 action="?/payWithPromptPay"
                 use:enhance={() => {
+                  // PREVENT DOUBLE SUBMIT: Return immediately if already loading
+                  if (isPromptPayLoading) {
+                    return async () => {};
+                  }
+
                   if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
                     return async () => {};
@@ -648,6 +654,11 @@
                 method="POST"
                 action="?/payWithPromptPay"
                 use:enhance={() => {
+                  // PREVENT DOUBLE SUBMIT: Return immediately if already loading
+                  if (isPromptPayLoading) {
+                    return async () => {};
+                  }
+
                   if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
                     return async () => {};
