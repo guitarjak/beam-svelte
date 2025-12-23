@@ -11,6 +11,12 @@ export type Product = {
   successUrl?: string; // Optional per-product success redirect
   imageUrl?: string; // Optional product image
   logoUrl?: string; // Optional brand logo
+  webhookUrl?: string; // Optional per-product n8n webhook
+  successMessage?: {
+    title: string; // Custom success page title
+    description: string; // Custom success page description
+    nextSteps: string[]; // Array of next steps to show customer
+  };
 };
 
 // Load all products from JSON

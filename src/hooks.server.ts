@@ -30,11 +30,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   // - Styles: Required for component transitions and dynamic styles
   // See: https://github.com/sveltejs/kit/issues/5215
   const cspDirectives = [
-    // Script sources: self + unsafe-inline (required for SvelteKit hydration)
-    "script-src 'self' 'unsafe-inline'",
+    // Script sources: self + unsafe-inline (required for SvelteKit hydration) + Facebook Pixel
+    "script-src 'self' 'unsafe-inline' https://connect.facebook.net",
 
-    // API connections: self + Beam payment API only
-    "connect-src 'self' https://api.beamcheckout.com https://playground.api.beamcheckout.com",
+    // API connections: self + Beam payment API + Facebook Pixel API
+    "connect-src 'self' https://api.beamcheckout.com https://playground.api.beamcheckout.com https://www.facebook.com https://graph.facebook.com",
 
     // Styles: self + unsafe-inline + Google Fonts
     // unsafe-inline required for SvelteKit component transitions/dynamic styles
@@ -43,8 +43,8 @@ export const handle: Handle = async ({ event, resolve }) => {
     // Fonts: self + Google Fonts CDN
     "font-src 'self' https://fonts.gstatic.com",
 
-    // Images: self + data URIs (for QR codes)
-    "img-src 'self' data:",
+    // Images: self + data URIs (for QR codes) + Facebook Pixel tracking images
+    "img-src 'self' data: https://www.facebook.com",
 
     // Frames: none
     "frame-src 'none'",

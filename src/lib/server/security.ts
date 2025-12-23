@@ -53,6 +53,9 @@ interface SessionMarker {
   chargeId?: string;
   timestamp: number;
   ip: string;
+  productSlug?: string; // Product associated with this session
+  webhookSent?: boolean; // Prevent duplicate webhook sends
+  capiSent?: boolean; // Prevent duplicate CAPI events
 }
 
 const sessionStore = new Map<string, SessionMarker>();
@@ -62,14 +65,21 @@ const sessionStore = new Map<string, SessionMarker>();
  * @param referenceId - Order reference ID
  * @param ip - Client IP address
  * @param chargeId - Optional charge ID
+ * @param productSlug - Optional product slug for webhook/CAPI
  * @returns Signed token
  */
-export function createSessionToken(referenceId: string, ip: string, chargeId?: string): string {
+export function createSessionToken(
+  referenceId: string,
+  ip: string,
+  chargeId?: string,
+  productSlug?: string
+): string {
   const marker: SessionMarker = {
     referenceId,
     chargeId,
     timestamp: Date.now(),
-    ip
+    ip,
+    productSlug
   };
 
   // Create a simple signed token (use proper JWT in production)
@@ -182,4 +192,61 @@ export function isValidCardToken(token: string): boolean {
 export function isValidCvv(cvv: string): boolean {
   if (!cvv || typeof cvv !== 'string') return false;
   return /^[0-9]{3,4}$/.test(cvv);
+}
+
+/**
+ * Mark webhook as sent for a session
+ * @param token - Session token
+ */
+export function markWebhookSent(token: string): void {
+  const marker = sessionStore.get(token);
+  if (marker) {
+    marker.webhookSent = true;
+  }
+}
+
+/**
+ * Mark CAPI event as sent for a session
+ * @param token - Session token
+ */
+export function markCAPISent(token: string): void {
+  const marker = sessionStore.get(token);
+  if (marker) {
+    marker.capiSent = true;
+  }
+}
+
+/**
+ * Check if webhook has been sent for this session
+ * @param marker - Session marker
+ * @returns true if webhook already sent
+ */
+export function isWebhookSent(marker: SessionMarker): boolean {
+  return marker.webhookSent === true;
+}
+
+/**
+ * Check if CAPI event has been sent for this session
+ * @param marker - Session marker
+ * @returns true if CAPI event already sent
+ */
+export function isCAPISent(marker: SessionMarker): boolean {
+  return marker.capiSent === true;
+}
+
+/**
+ * Generate deterministic event ID for Facebook deduplication
+ * Uses MD5 hash to ensure same referenceId always produces same eventId
+ * @param referenceId - Order reference ID
+ * @returns MD5 hash in hex format
+ */
+export function generateEventId(referenceId: string): string {
+  // Simple hash function for event ID (deterministic)
+  let hash = 0;
+  for (let i = 0; i < referenceId.length; i++) {
+    const char = referenceId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).padStart(16, '0');
 }

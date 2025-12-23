@@ -132,7 +132,7 @@ export const actions = {
     const successUrl = product.successUrl || '/checkout/success';
 
     // SECURITY: Create signed session token for later verification
-    const sessionToken = createSessionToken(referenceId, clientIp);
+    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug);
 
     // SECURITY: Only log non-sensitive transaction metadata (no card data, no CVV)
     console.log(`[Payment] Processing tokenized card payment: ref=${referenceId}`);
@@ -237,7 +237,7 @@ export const actions = {
     const successUrl = product.successUrl || '/checkout/success';
 
     // SECURITY: Create signed session token for later verification
-    const sessionToken = createSessionToken(referenceId, clientIp);
+    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug);
 
     // Set QR expiry 10 minutes from now
     const expiryDate = new Date(Date.now() + 10 * 60 * 1000);

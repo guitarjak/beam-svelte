@@ -36,11 +36,30 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
   try {
     const charge = await getCharge(chargeId);
 
+    // Build proper success URL with query parameters for tracking
+    let finalSuccessUrl = successUrl || '/checkout/success';
+
+    // Add query parameters if status is SUCCEEDED
+    if (charge.status === 'SUCCEEDED') {
+      const urlParams = new URLSearchParams({
+        ref: sessionMarker.referenceId,
+        chargeId: chargeId
+      });
+
+      // Add token if not in cookie (for mobile/cross-domain)
+      const hasTokenCookie = cookies.get('beam_session');
+      if (!hasTokenCookie) {
+        urlParams.set('token', sessionToken);
+      }
+
+      finalSuccessUrl = `${finalSuccessUrl}?${urlParams.toString()}`;
+    }
+
     // SECURITY: Only return minimal status info, no amounts to unauthorized callers
     return json({
       chargeId,
       status: charge.status,
-      successUrl
+      successUrl: finalSuccessUrl
     });
   } catch (err) {
     return json(

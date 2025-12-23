@@ -6,19 +6,39 @@
     "price": 149000,
     "currency": "THB",
     "active": true,
-    "successUrl": "https://www.jakkrapat.com",
+    "successUrl": "/checkout/success",
     "imageUrl": "/images/products/super-productivity.JPG",
-    "logoUrl": "/images/products/w1w-site-logo.png"
+    "logoUrl": "/images/products/w1w-site-logo.png",
+    "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
+    "successMessage": {
+      "title": "Welcome to Website1Wun!",
+      "description": "รายละเอียดส่งไปทาง Email ของเรานะค้าบ (มาจาก guitar@website1wun.com) ผมรบกวนช่วยเช็คใน junk / promotions หน่อยนะค้าบ",
+      "nextSteps": [
+        "ตรวจสอบอีเมลของคุณเพื่อรับลิงก์เข้าร่วม Workshop",
+        "เตรียมคอมพิวเตอร์และอินเทอร์เน็ตที่เสถียร",
+        "เตรียมความพร้อมที่จะสร้าง Website ของคุณภายใน 1 วัน!"
+      ]
+    }
   },
   {
-    "slug": "product-2",
-    "name": "AI Automation Guide",
-    "description": "Step-by-step guide to automate your business.",
-    "price": 149000,
+    "slug": "demo-product",
+    "name": "Demo1",
+    "description": "This is just a demo product to test a payment.",
+    "price": 1000,
     "currency": "THB",
     "active": true,
-    "successUrl": "https://www.google.com",
+    "successUrl": "/checkout/success",
     "imageUrl": "",
-    "logoUrl": ""
+    "logoUrl": "",
+    "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
+    "successMessage": {
+      "title": "Thank you for your purchase!",
+      "description": "We've sent a confirmation email with your AI Automation Guide.",
+      "nextSteps": [
+        "Check your email for the download link",
+        "Follow the step-by-step instructions in the guide",
+        "Start automating your business processes today!"
+      ]
+    }
   }
 ]

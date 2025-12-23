@@ -135,6 +135,7 @@ export interface BeamChargeResponse {
   createdAt?: string;
   updatedAt?: string;
   transactionTime?: string;
+  customer?: Customer; // Customer info if provided
 }
 
 // ============================================================================
@@ -238,6 +239,21 @@ async function beamRequest<T>(
 export async function createCharge(
   request: BeamChargeRequest
 ): Promise<BeamChargeResponse> {
+  // Debug: Log the request (mask sensitive data)
+  const debugRequest = {
+    ...request,
+    paymentMethod: request.paymentMethod.paymentMethodType === 'CARD_TOKEN'
+      ? {
+          paymentMethodType: request.paymentMethod.paymentMethodType,
+          cardToken: {
+            cardTokenId: request.paymentMethod.cardToken?.cardTokenId ? '[PRESENT]' : '[MISSING]',
+            securityCode: request.paymentMethod.cardToken?.securityCode ? '[PRESENT]' : '[MISSING]'
+          }
+        }
+      : request.paymentMethod
+  };
+  console.log('[Beam] createCharge request:', JSON.stringify(debugRequest, null, 2));
+
   return beamRequest<BeamChargeResponse>('/charges', {
     method: 'POST',
     body: JSON.stringify(request)

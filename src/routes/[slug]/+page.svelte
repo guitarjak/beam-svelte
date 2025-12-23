@@ -3,6 +3,7 @@
   import { enhance } from '$app/forms';
   import { onDestroy, onMount } from 'svelte';
   import { env as publicEnv } from '$env/dynamic/public';
+  import { trackInitiateCheckout } from '$lib/facebook-pixel';
 
   // Receive product data from +page.server.ts
   export let data: PageData;
@@ -36,6 +37,16 @@
 
   onMount(() => {
     mounted = true;
+
+    // Track Facebook Pixel InitiateCheckout event
+    if (publicEnv.PUBLIC_FB_PIXEL_ID) {
+      trackInitiateCheckout({
+        value: data.product.price / 100, // Convert satang to THB
+        currency: data.product.currency,
+        content_name: data.product.name,
+        content_ids: [data.product.slug]
+      });
+    }
   });
 
   // Helper: validate email format
