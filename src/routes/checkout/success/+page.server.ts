@@ -132,8 +132,12 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
     const eventId = generateEventId(referenceId);
 
     // Send n8n webhook (if configured and not already sent)
-    if (product.webhookUrl && !isWebhookSent(sessionMarker)) {
+    // Check cookie first (for serverless persistence), then sessionMarker
+    const webhookAlreadySent = cookies.get('beam_webhook_sent') === 'true' || isWebhookSent(sessionMarker);
+
+    if (product.webhookUrl && !webhookAlreadySent) {
       try {
+        console.log('[Webhook] Sending webhook to:', product.webhookUrl);
         await sendN8NWebhook(product.webhookUrl, {
           event: 'payment.succeeded',
           timestamp: new Date().toISOString(),
@@ -153,16 +157,32 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
             currency: product.currency
           }
         });
+        console.log('[Webhook] Sent successfully');
+
+        // Mark as sent in both memory AND cookie (for serverless persistence)
         markWebhookSent(token);
+        cookies.set('beam_webhook_sent', 'true', {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 60 * 60 // 1 hour
+        });
       } catch (err) {
         console.error('[Webhook] Failed:', err);
         // Continue - don't fail page load
       }
+    } else if (webhookAlreadySent) {
+      console.log('[Webhook] Already sent, skipping');
     }
 
     // Send Facebook CAPI Purchase event (if configured and not already sent)
-    if (env.FB_PIXEL_ID && env.FB_CAPI_ACCESS_TOKEN && !isCAPISent(sessionMarker)) {
+    // Check cookie first (for serverless persistence), then sessionMarker
+    const capiAlreadySent = cookies.get('beam_capi_sent') === 'true' || isCAPISent(sessionMarker);
+
+    if (env.FB_PIXEL_ID && env.FB_CAPI_ACCESS_TOKEN && !capiAlreadySent) {
       try {
+        console.log('[CAPI] Sending Facebook CAPI event');
         await sendFacebookCAPIEvent({
           eventName: 'Purchase',
           eventTime: Math.floor(Date.now() / 1000),
@@ -180,11 +200,23 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
             content_ids: [product.slug]
           }
         });
+        console.log('[CAPI] Sent successfully');
+
+        // Mark as sent in both memory AND cookie (for serverless persistence)
         markCAPISent(token);
+        cookies.set('beam_capi_sent', 'true', {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 60 * 60 // 1 hour
+        });
       } catch (err) {
         console.error('[CAPI] Failed:', err);
         // Continue - don't fail page load
       }
+    } else if (capiAlreadySent) {
+      console.log('[CAPI] Already sent, skipping');
     }
 
     return {
