@@ -169,21 +169,23 @@ export const actions = {
       updateSessionToken(sessionToken, charge.chargeId);
 
       // Store session token in cookie for charge status verification
+      // Using sameSite: 'lax' to allow cookie when returning from 3DS (external domain)
       cookies.set('beam_session', sessionToken, {
         path: '/',
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Allow cookie when redirected back from 2c2p
         maxAge: 60 * 60 // 1 hour
       });
 
       // CRITICAL FOR SERVERLESS: Store chargeId in a separate cookie
       // In Vercel, in-memory sessionStore doesn't persist across requests
+      // Using sameSite: 'lax' to allow cookie when returning from 3DS (external domain)
       cookies.set('beam_charge_id', charge.chargeId, {
         path: '/',
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Allow cookie when redirected back from 2c2p
         maxAge: 60 * 60 // 1 hour
       });
 
@@ -287,21 +289,23 @@ export const actions = {
       updateSessionToken(sessionToken, charge.chargeId);
 
       // Store session token in cookie for charge status verification
+      // Using sameSite: 'lax' to allow cookie when returning from 3DS (external domain)
       cookies.set('beam_session', sessionToken, {
         path: '/',
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Allow cookie when redirected back from 2c2p
         maxAge: 60 * 60 // 1 hour
       });
 
       // CRITICAL FOR SERVERLESS: Store chargeId in a separate cookie
       // In Vercel, in-memory sessionStore doesn't persist across requests
+      // Using sameSite: 'lax' to allow cookie when returning from 3DS (external domain)
       cookies.set('beam_charge_id', charge.chargeId, {
         path: '/',
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Allow cookie when redirected back from 2c2p
         maxAge: 60 * 60 // 1 hour
       });
 
