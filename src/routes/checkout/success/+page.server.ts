@@ -148,7 +148,8 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
             currency: product.currency
           },
           customer: {
-            email: charge.customer?.email
+            email: charge.customer?.email || sessionMarker.email,
+            fullName: sessionMarker.fullName
           },
           transaction: {
             chargeId,

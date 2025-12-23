@@ -108,6 +108,7 @@ export const actions = {
     let cardToken = formData.get('cardToken')?.toString() || '';
     let securityCode = formData.get('securityCode')?.toString() || '';
     const email = formData.get('email')?.toString() || '';
+    const fullName = formData.get('fullName')?.toString() || '';
 
     // SECURITY: Validate inputs with strict rules
     if (!isValidCardToken(cardToken)) {
@@ -133,7 +134,7 @@ export const actions = {
     const successUrl = product.successUrl || '/checkout/success';
 
     // SECURITY: Create signed session token for later verification
-    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug);
+    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug, fullName, email);
 
     // SECURITY: Only log non-sensitive transaction metadata (no card data, no CVV)
     console.log(`[Payment] Processing tokenized card payment: ref=${referenceId}`);
@@ -247,6 +248,7 @@ export const actions = {
     // Get form data
     const formData = await request.formData();
     const email = formData.get('email')?.toString() || '';
+    const fullName = formData.get('fullName')?.toString() || '';
 
     // Validate email if provided
     if (email && !isValidEmail(email)) {
@@ -258,7 +260,7 @@ export const actions = {
     const successUrl = product.successUrl || '/checkout/success';
 
     // SECURITY: Create signed session token for later verification
-    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug);
+    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug, fullName, email);
 
     // Set QR expiry 10 minutes from now
     const expiryDate = new Date(Date.now() + 10 * 60 * 1000);

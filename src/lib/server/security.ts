@@ -56,6 +56,8 @@ interface SessionMarker {
   productSlug?: string; // Product associated with this session
   webhookSent?: boolean; // Prevent duplicate webhook sends
   capiSent?: boolean; // Prevent duplicate CAPI events
+  fullName?: string; // Customer full name
+  email?: string; // Customer email
 }
 
 const sessionStore = new Map<string, SessionMarker>();
@@ -66,20 +68,26 @@ const sessionStore = new Map<string, SessionMarker>();
  * @param ip - Client IP address
  * @param chargeId - Optional charge ID
  * @param productSlug - Optional product slug for webhook/CAPI
+ * @param fullName - Optional customer full name
+ * @param email - Optional customer email
  * @returns Signed token
  */
 export function createSessionToken(
   referenceId: string,
   ip: string,
   chargeId?: string,
-  productSlug?: string
+  productSlug?: string,
+  fullName?: string,
+  email?: string
 ): string {
   const marker: SessionMarker = {
     referenceId,
     chargeId,
     timestamp: Date.now(),
     ip,
-    productSlug
+    productSlug,
+    fullName,
+    email
   };
 
   // Create a simple signed token (use proper JWT in production)

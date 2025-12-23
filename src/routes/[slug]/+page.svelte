@@ -20,9 +20,11 @@
   // UI state
   let selectedMethod: 'promptpay' | 'card' = 'card';
   let email = '';
+  let fullName = '';
   let cardNumber = '';
   let expiryDate = '';
   let emailError = false;
+  let fullNameError = false;
   let isLoading = false;
   let isPromptPayLoading = false;
   let promptPayError = '';
@@ -284,6 +286,22 @@
       <div class="form-section">
         <h2 class="section-title">Contact information</h2>
         <div class="input-group">
+          <label for="fullName" class="input-label">Full name</label>
+          <input
+            type="text"
+            id="fullName"
+            bind:value={fullName}
+            on:input={() => fullNameError = false}
+            placeholder="John Doe"
+            class="form-input"
+            class:input-error={fullNameError}
+          />
+          {#if fullNameError}
+            <span class="error-hint">Please enter your full name</span>
+          {/if}
+        </div>
+
+        <div class="input-group">
           <label for="email" class="input-label">Email address</label>
           <input
             type="email"
@@ -382,7 +400,11 @@
                 // PREVENT DOUBLE SUBMIT: Return immediately if already loading
                 if (isLoading) return;
 
-                // Validate email first
+                // Validate full name and email
+                if (!fullName || fullName.trim() === '') {
+                  fullNameError = true;
+                  return;
+                }
                 if (!email || email.trim() === '' || !isValidEmail(email)) {
                   emailError = true;
                   return;
@@ -419,13 +441,14 @@
                   cardNumber = '';
                   expiryDate = '';
 
-                  // SECURITY: Send only token + CVV + email to server
+                  // SECURITY: Send only token + CVV + email + fullName to server
                   // NOTE: Due to Beam API design, CVV cannot be included in token
                   // and must be sent separately when creating the charge
                   const tokenizedFormData = new FormData();
                   tokenizedFormData.set('cardToken', tokenResponse.id);
                   tokenizedFormData.set('securityCode', securityCode); // Required by Beam API
-                  tokenizedFormData.set('email', email); // Send email to server
+                  tokenizedFormData.set('email', email);
+                  tokenizedFormData.set('fullName', fullName);
 
                   // Submit the form with token
                   const response = await fetch('?/payWithCard', {
@@ -618,6 +641,11 @@
                     return async () => {};
                   }
 
+                  // Validate full name and email
+                  if (!fullName || fullName.trim() === '') {
+                    fullNameError = true;
+                    return async () => {};
+                  }
                   if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
                     return async () => {};
@@ -641,6 +669,7 @@
                 }}
               >
                 <input type="hidden" name="email" bind:value={email} />
+                <input type="hidden" name="fullName" bind:value={fullName} />
                 <button
                   type="submit"
                   class="cta-button secondary"
@@ -659,6 +688,11 @@
                     return async () => {};
                   }
 
+                  // Validate full name and email
+                  if (!fullName || fullName.trim() === '') {
+                    fullNameError = true;
+                    return async () => {};
+                  }
                   if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
                     return async () => {};
@@ -682,6 +716,7 @@
                 }}
               >
                 <input type="hidden" name="email" bind:value={email} />
+                <input type="hidden" name="fullName" bind:value={fullName} />
                 <button
                   type="submit"
                   class="cta-button primary"
