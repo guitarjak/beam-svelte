@@ -330,7 +330,8 @@
     font-size: 0.8125rem;
     color: var(--slate-900);
     margin: 0;
-    word-break: break-all;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     background: white;
     padding: 0.5rem;
     border-radius: 4px;
