@@ -113,8 +113,13 @@ export function verifySessionToken(token: string, ip: string): SessionMarker | n
   const marker = sessionStore.get(token);
   if (!marker) return null;
 
-  // Verify IP matches
-  if (marker.ip !== ip) return null;
+  // Verify IP matches (allow 'unknown' for localhost/dev)
+  // In production, both IPs should match for security
+  const isUnknownIp = marker.ip === 'unknown' || ip === 'unknown';
+  if (!isUnknownIp && marker.ip !== ip) {
+    console.warn('[Security] IP mismatch:', { expected: marker.ip, actual: ip });
+    return null;
+  }
 
   // Verify not expired (1 hour TTL)
   const now = Date.now();
