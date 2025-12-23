@@ -18,20 +18,32 @@ import { env } from '$env/dynamic/private';
 // SECURITY: Server-side success page validation
 // Only show success if charge status is SUCCEEDED per Beam API
 export const load: PageServerLoad = async ({ url, cookies, request }) => {
+  console.log('[Success] Page load started');
   const clientIp = getClientIp(request);
   const referenceId = url.searchParams.get('ref');
   const chargeId = url.searchParams.get('chargeId');
   const token = url.searchParams.get('token') || cookies.get('beam_session') || '';
 
+  console.log('[Success] Parameters:', { referenceId, chargeId, hasToken: !!token, clientIp });
+
   // Require reference ID and charge ID
   if (!referenceId || !chargeId) {
+    console.error('[Success] Missing required parameters');
     // Missing required params - redirect to home
     redirect(303, '/');
   }
 
   // SECURITY: Verify session token to ensure this user initiated the charge
+  console.log('[Success] Verifying session token');
   const sessionMarker = verifySessionToken(token, clientIp);
+  console.log('[Success] Session marker:', sessionMarker ? 'valid' : 'invalid');
+
   if (!sessionMarker || sessionMarker.referenceId !== referenceId) {
+    console.error('[Success] Token verification failed:', {
+      hasMarker: !!sessionMarker,
+      markerRef: sessionMarker?.referenceId,
+      urlRef: referenceId
+    });
     // Unauthorized access to success page
     error(403, 'Unauthorized access to payment confirmation');
   }
@@ -51,15 +63,19 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
   }
 
   // Get product data first (needed for display even if charge verification fails)
+  console.log('[Success] Looking up product for slug:', productSlug);
   const product = getProductBySlug(productSlug);
   if (!product) {
     console.error('[Success] Product not found for slug:', productSlug);
     error(500, 'Product not found. Please contact support.');
   }
+  console.log('[Success] Product found:', product.name);
 
   try {
     // SECURITY: Verify charge status with Beam before showing success
+    console.log('[Success] Fetching charge from Beam:', chargeId);
     const charge = await getCharge(chargeId);
+    console.log('[Success] Charge status:', charge.status);
 
     if (charge.status !== 'SUCCEEDED') {
       // Payment not successful - redirect to error or retry page
@@ -71,6 +87,8 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
         error(400, 'Payment was not successful. Please try again.');
       }
     }
+
+    console.log('[Success] Charge verified successfully');
 
     // Generate deterministic event_id for deduplication
     const eventId = generateEventId(referenceId);
@@ -151,7 +169,13 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
       }
     };
   } catch (err) {
-    console.error('[Success] Failed to verify charge:', err instanceof Error ? err.message : 'Unknown');
+    console.error('[Success] Failed to verify charge:', err);
+    console.error('[Success] Error type:', typeof err);
+    console.error('[Success] Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error('[Success] Final error message:', errorMessage);
+
     error(500, 'Unable to verify payment status. Please contact support.');
   }
 };
