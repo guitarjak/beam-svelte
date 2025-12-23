@@ -106,12 +106,20 @@ export function verifySessionToken(token: string, ip: string): SessionMarker | n
   const secret = env.SESSION_SECRET || 'change-this-in-production';
   const expectedSignature = createHmac(payload, secret);
 
+  // Verify signature
   if (signature !== expectedSignature) {
     return null;
   }
 
-  const marker = sessionStore.get(token);
-  if (!marker) return null;
+  // Decode the payload to get the marker data
+  let marker: SessionMarker;
+  try {
+    const decoded = Buffer.from(payload, 'base64').toString('utf-8');
+    marker = JSON.parse(decoded);
+  } catch (err) {
+    console.error('[Security] Failed to decode token payload:', err);
+    return null;
+  }
 
   // Verify IP matches (allow 'unknown' for localhost/dev)
   // In production, both IPs should match for security
@@ -124,8 +132,18 @@ export function verifySessionToken(token: string, ip: string): SessionMarker | n
   // Verify not expired (1 hour TTL)
   const now = Date.now();
   if (now - marker.timestamp > 60 * 60 * 1000) {
-    sessionStore.delete(token);
     return null;
+  }
+
+  // Check sessionStore for optional state (webhookSent, capiSent)
+  // If token exists in store, merge the state
+  const storedMarker = sessionStore.get(token);
+  if (storedMarker) {
+    marker.webhookSent = storedMarker.webhookSent;
+    marker.capiSent = storedMarker.capiSent;
+  } else {
+    // In serverless, store might be empty - that's ok, store it now
+    sessionStore.set(token, marker);
   }
 
   return marker;
