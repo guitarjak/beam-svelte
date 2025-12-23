@@ -21,15 +21,30 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
   console.log('[Success] Page load started');
   const clientIp = getClientIp(request);
   const referenceId = url.searchParams.get('ref');
-  const chargeId = url.searchParams.get('chargeId');
+  let chargeId = url.searchParams.get('chargeId');
   const token = url.searchParams.get('token') || cookies.get('beam_session') || '';
 
   console.log('[Success] Parameters:', { referenceId, chargeId, hasToken: !!token, clientIp });
 
-  // Require reference ID and charge ID
-  if (!referenceId || !chargeId) {
-    console.error('[Success] Missing required parameters');
-    // Missing required params - redirect to home
+  // Require reference ID
+  if (!referenceId) {
+    console.error('[Success] Missing referenceId');
+    redirect(303, '/');
+  }
+
+  // If chargeId is missing, try to get it from session token
+  if (!chargeId && token) {
+    console.log('[Success] chargeId missing from URL, checking session token');
+    const sessionMarker = verifySessionToken(token, clientIp);
+    if (sessionMarker?.chargeId) {
+      chargeId = sessionMarker.chargeId;
+      console.log('[Success] Retrieved chargeId from session:', chargeId);
+    }
+  }
+
+  // Still no chargeId? Redirect to home
+  if (!chargeId) {
+    console.error('[Success] chargeId not found in URL or session');
     redirect(303, '/');
   }
 
@@ -71,24 +86,34 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
   }
   console.log('[Success] Product found:', product.name);
 
+  // SECURITY: Verify charge status with Beam before showing success
+  console.log('[Success] Fetching charge from Beam:', chargeId);
+  let charge;
   try {
-    // SECURITY: Verify charge status with Beam before showing success
-    console.log('[Success] Fetching charge from Beam:', chargeId);
-    const charge = await getCharge(chargeId);
+    charge = await getCharge(chargeId);
     console.log('[Success] Charge status:', charge.status);
+  } catch (err) {
+    console.error('[Success] Failed to fetch charge from Beam:', err);
+    console.error('[Success] Error type:', typeof err);
+    console.error('[Success] Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    error(500, 'Unable to verify payment status. Please contact support.');
+  }
 
-    if (charge.status !== 'SUCCEEDED') {
-      // Payment not successful - redirect to error or retry page
-      if (charge.status === 'PENDING') {
-        // Still pending - show waiting page or redirect
-        error(400, 'Payment is still pending. Please wait.');
-      } else {
-        // Failed or cancelled
-        error(400, 'Payment was not successful. Please try again.');
-      }
-    }
+  // Check charge status (redirect to failed page if not successful)
+  if (charge.status !== 'SUCCEEDED') {
+    // Payment not successful - redirect to failed page
+    console.error('[Success] Payment not successful:', {
+      status: charge.status,
+      failureCode: charge.failureCode,
+      chargeId: chargeId
+    });
+    const reason = charge.status === 'PENDING' ? 'pending' : 'failed';
+    redirect(303, `/checkout/failed?reason=${reason}&chargeId=${chargeId}`);
+  }
 
-    console.log('[Success] Charge verified successfully');
+  console.log('[Success] Charge verified successfully');
+
+  try {
 
     // Generate deterministic event_id for deduplication
     const eventId = generateEventId(referenceId);
@@ -169,13 +194,13 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
       }
     };
   } catch (err) {
-    console.error('[Success] Failed to verify charge:', err);
+    console.error('[Success] Failed during webhook/CAPI:', err);
     console.error('[Success] Error type:', typeof err);
     console.error('[Success] Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
 
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error('[Success] Final error message:', errorMessage);
 
-    error(500, 'Unable to verify payment status. Please contact support.');
+    error(500, 'Payment succeeded but notification failed. Please contact support with your order reference.');
   }
 };

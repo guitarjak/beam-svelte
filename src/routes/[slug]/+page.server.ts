@@ -7,6 +7,7 @@ import type { PageServerLoad, Actions } from './$types';
 import {
   isRateLimited,
   createSessionToken,
+  updateSessionToken,
   getClientIp,
   isValidEmail,
   isValidCardToken,
@@ -159,6 +160,9 @@ export const actions = {
       securityCode = '';
       cardToken = '';
 
+      // Store chargeId in session for later retrieval (in case Beam doesn't include it in redirect)
+      updateSessionToken(sessionToken, charge.chargeId);
+
       // Store session token in cookie for charge status verification
       cookies.set('beam_session', sessionToken, {
         path: '/',
@@ -263,6 +267,9 @@ export const actions = {
           error: 'Unexpected response from Beam. Please try again or use another method.'
         });
       }
+
+      // Store chargeId in session for later retrieval (in case Beam doesn't include it in redirect)
+      updateSessionToken(sessionToken, charge.chargeId);
 
       // Store session token in cookie for charge status verification
       cookies.set('beam_session', sessionToken, {
