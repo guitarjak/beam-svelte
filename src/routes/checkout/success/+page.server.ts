@@ -32,19 +32,32 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
     redirect(303, '/');
   }
 
-  // If chargeId is missing, try to get it from session token
-  if (!chargeId && token) {
-    console.log('[Success] chargeId missing from URL, checking session token');
-    const sessionMarker = verifySessionToken(token, clientIp);
-    if (sessionMarker?.chargeId) {
-      chargeId = sessionMarker.chargeId;
-      console.log('[Success] Retrieved chargeId from session:', chargeId);
+  // If chargeId is missing, try to get it from session token or cookie
+  if (!chargeId) {
+    console.log('[Success] chargeId missing from URL, checking session token and cookies');
+
+    // Try session token first
+    if (token) {
+      const sessionMarker = verifySessionToken(token, clientIp);
+      if (sessionMarker?.chargeId) {
+        chargeId = sessionMarker.chargeId;
+        console.log('[Success] Retrieved chargeId from session token:', chargeId);
+      }
+    }
+
+    // If still missing, try cookie (for serverless environments like Vercel)
+    if (!chargeId) {
+      const chargeIdFromCookie = cookies.get('beam_charge_id');
+      if (chargeIdFromCookie) {
+        chargeId = chargeIdFromCookie;
+        console.log('[Success] Retrieved chargeId from cookie:', chargeId);
+      }
     }
   }
 
   // Still no chargeId? Redirect to home
   if (!chargeId) {
-    console.error('[Success] chargeId not found in URL or session');
+    console.error('[Success] chargeId not found in URL, session, or cookies');
     redirect(303, '/');
   }
 

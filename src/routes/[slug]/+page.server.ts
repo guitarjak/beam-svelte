@@ -139,6 +139,11 @@ export const actions = {
     console.log(`[Payment] Processing tokenized card payment: ref=${referenceId}`);
 
     try {
+      // Build the return URL (without chargeId since we don't have it yet)
+      const returnUrl = buildSuccessUrl(successUrl, { ref: referenceId, token: sessionToken });
+      console.log(`[Payment] Return URL: ${returnUrl}`);
+      console.log(`[Payment] Success URL from product: ${successUrl}`);
+
       // Create charge with Beam using the token
       // SECURITY: securityCode is passed directly to Beam, never logged or stored
       const charge = await createCharge({
@@ -152,7 +157,7 @@ export const actions = {
           }
         },
         referenceId,
-        returnUrl: buildSuccessUrl(successUrl, { ref: referenceId, token: sessionToken }),
+        returnUrl: returnUrl,
         customer: email ? { email } : undefined
       });
 
@@ -165,6 +170,16 @@ export const actions = {
 
       // Store session token in cookie for charge status verification
       cookies.set('beam_session', sessionToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 60 * 60 // 1 hour
+      });
+
+      // CRITICAL FOR SERVERLESS: Store chargeId in a separate cookie
+      // In Vercel, in-memory sessionStore doesn't persist across requests
+      cookies.set('beam_charge_id', charge.chargeId, {
         path: '/',
         httpOnly: true,
         secure: true,
@@ -273,6 +288,16 @@ export const actions = {
 
       // Store session token in cookie for charge status verification
       cookies.set('beam_session', sessionToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 60 * 60 // 1 hour
+      });
+
+      // CRITICAL FOR SERVERLESS: Store chargeId in a separate cookie
+      // In Vercel, in-memory sessionStore doesn't persist across requests
+      cookies.set('beam_charge_id', charge.chargeId, {
         path: '/',
         httpOnly: true,
         secure: true,
