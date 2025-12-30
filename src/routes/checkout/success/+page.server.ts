@@ -100,11 +100,35 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
   console.log('[Success] Product found:', product.name);
 
   // SECURITY: Verify charge status with Beam before showing success
+  // Add retry logic for PENDING status to handle race conditions after 3DS redirect
   console.log('[Success] Fetching charge from Beam:', chargeId);
   let charge;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [2000, 3000, 4000]; // Delays in milliseconds (2s, 3s, 4s)
+
   try {
     charge = await getCharge(chargeId);
-    console.log('[Success] Charge status:', charge.status);
+    console.log('[Success] Charge status (initial):', charge.status);
+
+    // Retry logic for PENDING status
+    // This handles race conditions where Beam's system hasn't updated yet after 3DS
+    let retryCount = 0;
+    while (charge.status === 'PENDING' && retryCount < MAX_RETRIES) {
+      const delay = RETRY_DELAYS[retryCount];
+      console.log(`[Success] Status PENDING, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Fetch charge status again
+      charge = await getCharge(chargeId);
+      console.log(`[Success] Charge status (retry ${retryCount + 1}):`, charge.status);
+      retryCount++;
+    }
+
+    if (charge.status === 'PENDING' && retryCount >= MAX_RETRIES) {
+      console.log('[Success] Status still PENDING after all retries');
+    }
   } catch (err) {
     console.error('[Success] Failed to fetch charge from Beam:', err);
     console.error('[Success] Error type:', typeof err);

@@ -23,7 +23,7 @@
         Your payment is still being processed. This may take a few moments.
       </p>
       <p class="error-hint">
-        Please wait a moment and refresh this page, or check your email for confirmation.
+        Click "Check Status" below to verify if your payment has been processed.
       </p>
     {:else}
       <p class="error-description">
@@ -45,8 +45,13 @@
     {/if}
 
     <div class="actions">
-      <a href="/" class="btn btn-primary">Try Again</a>
-      <a href="mailto:guitar@deadsimpleproductivity.com" class="btn btn-secondary">Contact Support</a>
+      {#if reason === 'pending'}
+        <button on:click={() => window.location.reload()} class="btn btn-primary">Check Status</button>
+        <a href="mailto:guitar@deadsimpleproductivity.com" class="btn btn-secondary">Contact Support</a>
+      {:else}
+        <a href="/" class="btn btn-primary">Try Again</a>
+        <a href="mailto:guitar@deadsimpleproductivity.com" class="btn btn-secondary">Contact Support</a>
+      {/if}
     </div>
   </div>
 </div>
@@ -164,6 +169,9 @@
     border-radius: 10px;
     transition: all 0.2s ease;
     min-height: 48px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
   }
 
   .btn-primary {
