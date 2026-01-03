@@ -154,6 +154,7 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
 
     // Generate deterministic event_id for deduplication
     const eventId = generateEventId(referenceId);
+    console.log('[EventID] Generated event_id for deduplication:', eventId, 'from referenceId:', referenceId);
 
     // Send n8n webhook (if configured and not already sent)
     // Check cookie first (for serverless persistence), then sessionMarker

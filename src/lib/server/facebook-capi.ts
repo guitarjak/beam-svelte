@@ -81,7 +81,7 @@ export async function sendFacebookCAPIEvent(event: FacebookPurchaseEvent): Promi
       console.log(`[Facebook CAPI] Using test event code: ${testEventCode}`);
     }
 
-    console.log(`[Facebook CAPI] Sending ${event.eventName} event (ID: ${event.eventId})`);
+    console.log(`[Facebook CAPI] Sending ${event.eventName} event with event_id: ${event.eventId} for deduplication`);
 
     const response = await fetch(url, {
       method: 'POST',

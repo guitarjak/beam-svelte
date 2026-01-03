@@ -9,7 +9,8 @@ declare global {
     fbq: (
       action: 'track' | 'trackCustom' | 'init',
       eventName: string,
-      params?: Record<string, any>
+      params?: Record<string, any>,
+      options?: { eventID?: string } // Options parameter for deduplication
     ) => void;
     _fbq: any;
   }
@@ -142,6 +143,7 @@ export function trackPurchase(params: PurchaseParams): void {
       if (window.fbq) {
         clearInterval(checkInterval);
         console.log('[Facebook Pixel] SDK loaded, tracking Purchase');
+        console.log('[Facebook Pixel] Using eventID for deduplication:', params.eventId);
         window.fbq('track', 'Purchase', {
           value: params.value,
           currency: params.currency,
@@ -160,6 +162,7 @@ export function trackPurchase(params: PurchaseParams): void {
   }
 
   console.log('[Facebook Pixel] Tracking Purchase:', params);
+  console.log('[Facebook Pixel] Using eventID for deduplication:', params.eventId);
 
   window.fbq('track', 'Purchase', {
     value: params.value,
