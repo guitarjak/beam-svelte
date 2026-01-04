@@ -36,6 +36,8 @@
   let isCheckingStatus = false;           // Prevents concurrent checks
   let lastStatusCheck = 0;                // Timestamp for debouncing
   const STATUS_CHECK_DEBOUNCE = 2000;     // Min 2s between checks
+  let pollingStartTime = 0;               // Track when polling started
+  let currentPollInterval = 3000;         // Dynamic polling interval
 
   // Reactive statement to determine if card error should be shown
   $: showCardError = form?.error && selectedMethod === 'card';
@@ -214,16 +216,37 @@
     polling = false;
   }
 
-  // Poll Beam charge status until success/failure/expiry
+  // Get dynamic polling interval based on elapsed time (exponential backoff)
+  function getPollInterval(): number {
+    const elapsed = Date.now() - pollingStartTime;
+    const oneMinute = 60 * 1000;
+    const threeMinutes = 3 * oneMinute;
+
+    if (elapsed < oneMinute) return 3000;      // 0-1 min: 3s (fast for quick payers)
+    if (elapsed < threeMinutes) return 5000;   // 1-3 min: 5s (moderate)
+    return 10000;                              // 3+ min: 10s (slow, saves resources)
+  }
+
+  // Poll Beam charge status until success/failure/expiry (with exponential backoff)
   async function pollStatus(chargeId: string, expiryIso: string) {
     stopPolling();
     polling = true;
-    pollTimer = setInterval(async () => {
+    pollingStartTime = Date.now();
+    currentPollInterval = 3000;
+
+    async function checkStatus() {
+      // Stop if page is hidden (save Vercel resources)
+      if (document.hidden) {
+        console.log('[Polling] Page hidden, skipping check');
+        return;
+      }
+
       if (Date.now() > new Date(expiryIso).getTime()) {
         pollingError = 'QR expired, please try again.';
         stopPolling();
         return;
       }
+
       try {
         const res = await fetch(
           `/api/beam/charge-status?chargeId=${encodeURIComponent(
@@ -241,12 +264,26 @@
         } else if (statusData.status === 'FAILED' || statusData.status === 'CANCELLED') {
           pollingError = 'Payment failed. Please try again.';
           stopPolling();
+        } else {
+          // Status still PENDING - adjust interval for next check
+          const newInterval = getPollInterval();
+          if (newInterval !== currentPollInterval) {
+            currentPollInterval = newInterval;
+            console.log(`[Polling] Adjusted interval to ${newInterval}ms`);
+            // Restart polling with new interval
+            stopPolling();
+            polling = true;
+            pollTimer = setInterval(checkStatus, currentPollInterval);
+          }
         }
       } catch (err) {
         pollingError =
           err instanceof Error ? err.message : 'Could not check status. Please wait or retry.';
       }
-    }, 3000);
+    }
+
+    // Start polling
+    pollTimer = setInterval(checkStatus, currentPollInterval);
   }
 
   // Manual status check (triggered by button or visibility change)
@@ -688,8 +725,7 @@
                           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 </div>
-                <p class="guidance-text-th">หลังจากชำระเงินในแอปธนาคาร กรุณากลับมาที่หน้านี้ เราจะตรวจสอบการชำระเงินของคุณอัตโนมัติ</p>
-                <p class="guidance-text-en">After paying in your banking app, return here. We'll check your payment automatically.</p>
+                <p class="guidance-text-th">หลังจากชำระเรียบร้อย กรุณากลับมาที่หน้านี้ หากชำระแล้วหน้าเพจไม่เปลี่ยนลองกด "ตรวจสอบสถานะการชำระ" นะค้าบ</p>
               </div>
             {/if}
 
