@@ -30,7 +30,7 @@
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/dds-key-image.png",
     "logoUrl": "/images/products/dds-logo.png",
-    "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
+    "webhookUrl": "https://atm.guitarjkp.me/webhook/dds",
     "successMessage": {
       "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
       "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",
