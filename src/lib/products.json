@@ -21,23 +21,44 @@
     }
   },
   {
-    "slug": "demo-product",
-    "name": "Demo1",
-    "description": "This is just a demo product to test a payment.",
+    "slug": "digital-delivery-system",
+    "name": "DDS Full System",
+    "description": "ระบบส่งสินค้าที่เราสามารถเอาไปใช้เอง เซ็ทเองได้แบบง่ายๆ ใช้ได้กับทั้งเพจ ทั้งเว็บไซค์ หรือช่องทางการขายที่สามารถแปะลิงก์ได้ทุกที่เลย",
+    "price": 129000,
+    "currency": "THB",
+    "active": true,
+    "successUrl": "/checkout/success",
+    "imageUrl": "/images/products/dds-key-image.png",
+    "logoUrl": "/images/products/dds-logo.png",
+    "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
+    "successMessage": {
+      "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
+      "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",
+      "nextSteps": [
+        "1. เช็ค Email ของเราเพื่อเอารหัสเข้าคู่มือ DDS",
+        "2. เปิดลิงก์ที่อยู่ใน Email และใส่รหัสได้เลย",
+        "3. ชงกาแฟซักแก้ว แล้วลุยกันได้เลยค้าบ"
+      ]
+    }
+  },
+  {
+    "slug": "demo",
+    "name": "Demo",
+    "description": "Nah, this is nothing. Just a demo payment page for Guitar to try his random stuff to see if this page work or not.",
     "price": 1000,
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
-    "imageUrl": "",
-    "logoUrl": "",
+    "imageUrl": "/images/products/dds-key-image.png",
+    "logoUrl": "/images/products/dds-logo.png",
     "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
     "successMessage": {
-      "title": "Thank you for your purchase!",
-      "description": "We've sent a confirmation email with your AI Automation Guide.",
+      "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
+      "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",
       "nextSteps": [
-        "Check your email for the download link",
-        "Follow the step-by-step instructions in the guide",
-        "Start automating your business processes today!"
+        "เช็ค Email ของเราเพื่อเอารหัสเข้าคู่มือ DDS",
+        "เปิดลิงก์ที่อยู่ใน Email และใส่รหัสได้เลย",
+        "ชงกาแฟซักแก้ว แล้วลุยกันได้เลยค้าบ"
       ]
     }
   }

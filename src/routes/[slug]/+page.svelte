@@ -33,6 +33,9 @@
   let pollingError = '';
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let mounted = false;
+  let isCheckingStatus = false;           // Prevents concurrent checks
+  let lastStatusCheck = 0;                // Timestamp for debouncing
+  const STATUS_CHECK_DEBOUNCE = 2000;     // Min 2s between checks
 
   // Reactive statement to determine if card error should be shown
   $: showCardError = form?.error && selectedMethod === 'card';
@@ -49,6 +52,32 @@
         content_ids: [data.product.slug]
       });
     }
+
+    // Page Visibility API - auto-check when user returns
+    function handleVisibilityChange() {
+      if (!document.hidden && polling && promptPayResult) {
+        console.log('[Visibility] Page visible, checking payment');
+        checkPaymentStatus();
+      }
+    }
+
+    // Handle bfcache restoration (mobile browser back/forward)
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted && polling && promptPayResult) {
+        console.log('[BFCache] Page restored, checking payment');
+        checkPaymentStatus();
+      }
+    }
+
+    // Attach event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   });
 
   // Helper: validate email format
@@ -218,6 +247,54 @@
           err instanceof Error ? err.message : 'Could not check status. Please wait or retry.';
       }
     }, 3000);
+  }
+
+  // Manual status check (triggered by button or visibility change)
+  async function checkPaymentStatus() {
+    if (!promptPayResult) return;
+    if (isCheckingStatus) return; // Mutex lock
+
+    // Debounce: prevent rapid successive checks
+    const now = Date.now();
+    if (now - lastStatusCheck < STATUS_CHECK_DEBOUNCE) {
+      return;
+    }
+
+    // Check QR expiry
+    if (Date.now() > new Date(promptPayResult.expiry).getTime()) {
+      pollingError = 'QR expired, please try again.';
+      stopPolling();
+      return;
+    }
+
+    isCheckingStatus = true;
+    lastStatusCheck = now;
+
+    try {
+      const res = await fetch(
+        `/api/beam/charge-status?chargeId=${encodeURIComponent(
+          promptPayResult.chargeId
+        )}&successUrl=${encodeURIComponent(data.successUrl ?? '')}`
+      );
+      const statusData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(statusData?.error || 'Status check failed');
+      }
+
+      if (statusData.status === 'SUCCEEDED') {
+        stopPolling();
+        window.location.href = statusData.successUrl ?? '/checkout/success';
+      } else if (statusData.status === 'FAILED' || statusData.status === 'CANCELLED') {
+        pollingError = 'Payment failed. Please try again.';
+        stopPolling();
+      }
+    } catch (err) {
+      console.error('[Status] Check failed:', err);
+      pollingError = err instanceof Error ? err.message : 'Could not check status. Please wait or retry.';
+    } finally {
+      isCheckingStatus = false;
+    }
   }
 
   onDestroy(() => {
@@ -602,6 +679,18 @@
                   <p class="step-text">You will be shown a QR code to scan using your mobile banking app.</p>
                 </div>
               </div>
+            {:else}
+              <!-- Guidance shown AFTER QR is generated -->
+              <div class="payment-guidance">
+                <div class="guidance-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <p class="guidance-text-th">หลังจากชำระเงินในแอปธนาคาร กรุณากลับมาที่หน้านี้ เราจะตรวจสอบการชำระเงินของคุณอัตโนมัติ</p>
+                <p class="guidance-text-en">After paying in your banking app, return here. We'll check your payment automatically.</p>
+              </div>
             {/if}
 
             {#if promptPayResult}
@@ -617,6 +706,27 @@
                 <p class="qr-expiry">
                   Expires at {new Date(promptPayResult.expiry).toLocaleString()}
                 </p>
+
+                <!-- Manual status check button -->
+                {#if polling}
+                  <button
+                    type="button"
+                    on:click={checkPaymentStatus}
+                    class="check-status-button"
+                    disabled={isCheckingStatus}
+                  >
+                    {#if isCheckingStatus}
+                      <div class="button-spinner"></div>
+                      <span>กำลังตรวจสอบ...</span>
+                    {:else}
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span>ตรวจสอบสถานะการชำระเงิน</span>
+                    {/if}
+                  </button>
+                {/if}
 
                 <div class="qr-status">
                   {#if pollingError}
@@ -1676,6 +1786,99 @@
     color: var(--slate-300);
   }
 
+  /* Payment guidance message (shown after QR generation) */
+  .payment-guidance {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: 0.75rem;
+  }
+
+  .guidance-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--accent-primary);
+  }
+
+  .guidance-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .guidance-text-th {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--slate-700);
+    text-align: center;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .guidance-text-en {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--slate-500);
+    text-align: center;
+    margin: 0;
+  }
+
+  /* Manual check status button */
+  .check-status-button {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    background: white;
+    color: var(--slate-700);
+    border: 1.5px solid var(--slate-300);
+    border-radius: 0.625rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    min-height: 44px;
+  }
+
+  .check-status-button:hover:not(:disabled) {
+    border-color: var(--accent-primary);
+    background: rgba(37, 99, 235, 0.03);
+    color: var(--accent-primary);
+  }
+
+  .check-status-button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .check-status-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .check-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .button-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--slate-300);
+    border-top-color: var(--slate-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
   /* ========================================
      TABLET BREAKPOINT (md: 768px+)
      ======================================== */
@@ -1758,6 +1961,10 @@
 
     .checkout-footer {
       padding: 1.5rem 2rem;
+    }
+
+    .check-status-button {
+      padding: 1rem 1.5rem;
     }
   }
 
