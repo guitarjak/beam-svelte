@@ -59,7 +59,7 @@ function buildSuccessUrl(base: string | undefined, extraParams: Record<string, s
 }
 
 // Load product data based on the slug from the URL
-export const load: PageServerLoad = ({ params }) => {
+export const load: PageServerLoad = ({ params, url }) => {
   // Get the slug from the URL (e.g., /product-1 → slug is "product-1")
   const { slug } = params;
 
@@ -76,10 +76,14 @@ export const load: PageServerLoad = ({ params }) => {
     error(404, 'Product not available');
   }
 
+  // Capture Facebook Click ID from URL for attribution tracking
+  const fbclid = url.searchParams.get('fbclid') || undefined;
+
   // Return the product to the page
   return {
     product,
-    successUrl: buildSuccessUrl(product.successUrl, {})
+    successUrl: buildSuccessUrl(product.successUrl, {}),
+    fbclid // Pass fbclid to client for inclusion in payment forms
   };
 };
 
@@ -109,6 +113,7 @@ export const actions = {
     let securityCode = formData.get('securityCode')?.toString() || '';
     const email = formData.get('email')?.toString() || '';
     const fullName = formData.get('fullName')?.toString() || '';
+    const fbclid = formData.get('fbclid')?.toString() || undefined;
 
     // SECURITY: Validate inputs with strict rules
     if (!isValidCardToken(cardToken)) {
@@ -134,7 +139,7 @@ export const actions = {
     const successUrl = product.successUrl || '/checkout/success';
 
     // SECURITY: Create signed session token for later verification
-    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug, fullName, email);
+    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug, fullName, email, fbclid);
 
     // SECURITY: Only log non-sensitive transaction metadata (no card data, no CVV)
     console.log(`[Payment] Processing tokenized card payment: ref=${referenceId}`);
@@ -249,6 +254,7 @@ export const actions = {
     const formData = await request.formData();
     const email = formData.get('email')?.toString() || '';
     const fullName = formData.get('fullName')?.toString() || '';
+    const fbclid = formData.get('fbclid')?.toString() || undefined;
 
     // Validate email if provided
     if (email && !isValidEmail(email)) {
@@ -260,7 +266,7 @@ export const actions = {
     const successUrl = product.successUrl || '/checkout/success';
 
     // SECURITY: Create signed session token for later verification
-    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug, fullName, email);
+    const sessionToken = createSessionToken(referenceId, clientIp, undefined, slug, fullName, email, fbclid);
 
     // Set QR expiry 10 minutes from now
     const expiryDate = new Date(Date.now() + 10 * 60 * 1000);

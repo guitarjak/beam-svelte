@@ -58,6 +58,7 @@ interface SessionMarker {
   capiSent?: boolean; // Prevent duplicate CAPI events
   fullName?: string; // Customer full name
   email?: string; // Customer email
+  fbclid?: string; // Facebook Click ID for attribution tracking
 }
 
 const sessionStore = new Map<string, SessionMarker>();
@@ -70,6 +71,7 @@ const sessionStore = new Map<string, SessionMarker>();
  * @param productSlug - Optional product slug for webhook/CAPI
  * @param fullName - Optional customer full name
  * @param email - Optional customer email
+ * @param fbclid - Optional Facebook Click ID for attribution tracking
  * @returns Signed token
  */
 export function createSessionToken(
@@ -78,7 +80,8 @@ export function createSessionToken(
   chargeId?: string,
   productSlug?: string,
   fullName?: string,
-  email?: string
+  email?: string,
+  fbclid?: string
 ): string {
   const marker: SessionMarker = {
     referenceId,
@@ -87,7 +90,8 @@ export function createSessionToken(
     ip,
     productSlug,
     fullName,
-    email
+    email,
+    fbclid
   };
 
   // Create a simple signed token (use proper JWT in production)

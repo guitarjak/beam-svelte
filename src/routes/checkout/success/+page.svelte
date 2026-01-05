@@ -86,16 +86,6 @@
       {/if}
     </div>
 
-    <!-- Actions -->
-    <div class="actions">
-      <a href="/" class="btn btn-primary">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        Back to Home
-      </a>
-    </div>
-
     <p class="help-text">
       ต้องการความช่วยเหลือ?<br> ติดต่อผมได้ที่ <a href="mailto:guitar@deadsimpleproductivity.com" class="email-link">Email</a> นี้เลยค้าบ
     </p>
@@ -338,49 +328,6 @@
     border: 1px solid var(--slate-200);
   }
 
-  /* Actions */
-  .actions {
-    margin: 2rem 0 1.5rem;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-    min-height: 48px;
-    cursor: pointer;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--slate-900) 0%, var(--slate-800) 100%);
-    color: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, var(--slate-800) 0%, var(--slate-700) 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .btn-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    stroke-width: 2;
-  }
-
   /* Help Text */
   .help-text {
     font-size: 0.8125rem;
@@ -470,11 +417,6 @@
       font-size: 0.875rem;
     }
 
-    .btn {
-      padding: 1.125rem 2.5rem;
-      font-size: 1.0625rem;
-    }
-
     .help-text {
       font-size: 0.875rem;
     }
@@ -511,10 +453,6 @@
     .success-card,
     .success-icon {
       animation: none;
-    }
-
-    .btn {
-      transition: none;
     }
   }
 </style>

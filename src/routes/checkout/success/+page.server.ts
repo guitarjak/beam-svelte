@@ -206,9 +206,11 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
     // Check cookie first (for serverless persistence), then sessionMarker
     const capiAlreadySent = cookies.get('beam_capi_sent') === 'true' || isCAPISent(sessionMarker);
 
-    if (env.FB_PIXEL_ID && env.FB_CAPI_ACCESS_TOKEN && !capiAlreadySent) {
+    // IMPORTANT: Only send CAPI if fbclid exists (indicates Facebook ad traffic)
+    // This prevents organic purchases from being attributed to Facebook ads
+    if (env.FB_PIXEL_ID && env.FB_CAPI_ACCESS_TOKEN && !capiAlreadySent && sessionMarker.fbclid) {
       try {
-        console.log('[CAPI] Sending Facebook CAPI event');
+        console.log('[CAPI] Sending Facebook CAPI event (fbclid:', sessionMarker.fbclid, ')');
         await sendFacebookCAPIEvent({
           eventName: 'Purchase',
           eventTime: Math.floor(Date.now() / 1000),
@@ -243,6 +245,8 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
       }
     } else if (capiAlreadySent) {
       console.log('[CAPI] Already sent, skipping');
+    } else if (!sessionMarker.fbclid) {
+      console.log('[CAPI] Skipping - no fbclid found (organic traffic, not from Facebook ads)');
     }
 
     return {

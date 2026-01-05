@@ -563,6 +563,10 @@
                   tokenizedFormData.set('securityCode', securityCode); // Required by Beam API
                   tokenizedFormData.set('email', email);
                   tokenizedFormData.set('fullName', fullName);
+                  // Include fbclid for Facebook attribution tracking
+                  if (data.fbclid) {
+                    tokenizedFormData.set('fbclid', data.fbclid);
+                  }
 
                   // Submit the form with token
                   const response = await fetch('?/payWithCard', {
@@ -816,6 +820,9 @@
               >
                 <input type="hidden" name="email" bind:value={email} />
                 <input type="hidden" name="fullName" bind:value={fullName} />
+                {#if data.fbclid}
+                  <input type="hidden" name="fbclid" value={data.fbclid} />
+                {/if}
                 <button
                   type="submit"
                   class="cta-button secondary"
@@ -863,6 +870,9 @@
               >
                 <input type="hidden" name="email" bind:value={email} />
                 <input type="hidden" name="fullName" bind:value={fullName} />
+                {#if data.fbclid}
+                  <input type="hidden" name="fbclid" value={data.fbclid} />
+                {/if}
                 <button
                   type="submit"
                   class="cta-button primary"
