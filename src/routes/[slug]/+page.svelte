@@ -35,11 +35,67 @@
   let lastStatusCheck = 0;                // Timestamp for debouncing
   const STATUS_CHECK_DEBOUNCE = 2000;     // Min 2s between checks
 
+  // SessionStorage key for persisting payment state (survives page reloads on mobile)
+  const STORAGE_KEY = `promptpay_${data.product.slug}`;
+
+  // Helper: Save payment state to sessionStorage (survives mobile app switching)
+  function savePaymentState(result: typeof promptPayResult) {
+    if (!result) return;
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+      console.log('[Storage] Payment state saved');
+    } catch (e) {
+      console.warn('[Storage] Failed to save payment state:', e);
+    }
+  }
+
+  // Helper: Restore payment state from sessionStorage
+  function restorePaymentState(): typeof promptPayResult {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      if (!stored) return null;
+
+      const result = JSON.parse(stored) as typeof promptPayResult;
+      if (!result) return null;
+
+      // Check if QR has expired
+      if (Date.now() > new Date(result.expiry).getTime()) {
+        console.log('[Storage] Stored payment expired, clearing');
+        clearPaymentState();
+        return null;
+      }
+
+      console.log('[Storage] Payment state restored');
+      return result;
+    } catch (e) {
+      console.warn('[Storage] Failed to restore payment state:', e);
+      return null;
+    }
+  }
+
+  // Helper: Clear payment state from sessionStorage
+  function clearPaymentState() {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+      console.log('[Storage] Payment state cleared');
+    } catch (e) {
+      console.warn('[Storage] Failed to clear payment state:', e);
+    }
+  }
+
   // Reactive statement to determine if card error should be shown
   $: showCardError = form?.error && selectedMethod === 'card';
 
   onMount(() => {
     mounted = true;
+
+    // Restore payment state if page was reloaded (mobile browser killed the tab)
+    const restoredState = restorePaymentState();
+    if (restoredState) {
+      promptPayResult = restoredState;
+      selectedMethod = 'promptpay';
+      console.log('[Mount] Restored pending payment, chargeId:', restoredState.chargeId);
+    }
 
     // Track Facebook Pixel InitiateCheckout event
     if (publicEnv.PUBLIC_FB_PIXEL_ID) {
@@ -175,6 +231,7 @@
     promptPayError = '';
     pollingError = '';
     promptPayResult = null;
+    clearPaymentState(); // Clear persisted state
   }
 
   // Manual status check (triggered by button click)
@@ -191,6 +248,7 @@
     // Check QR expiry
     if (Date.now() > new Date(promptPayResult.expiry).getTime()) {
       pollingError = 'QR expired, please try again.';
+      clearPaymentState(); // Clear persisted state
       return;
     }
 
@@ -221,9 +279,11 @@
 
       if (statusData.status === 'SUCCEEDED') {
         console.log('[Manual Check] Redirecting to:', statusData.successUrl);
+        clearPaymentState(); // Clear persisted state before redirect
         window.location.href = statusData.successUrl ?? '/checkout/success';
       } else if (statusData.status === 'FAILED' || statusData.status === 'CANCELLED') {
         pollingError = 'Payment failed. Please try again.';
+        clearPaymentState(); // Clear persisted state
       } else {
         // Status still PENDING
         pollingError = 'Payment not confirmed yet. Please wait 10 seconds and try again.';
@@ -715,7 +775,7 @@
                     isPromptPayLoading = false;
                     if (result.type === 'success' && result.data?.promptPay) {
                       promptPayResult = result.data.promptPay;
-                      // Manual button-only approach - no automatic polling
+                      savePaymentState(result.data.promptPay); // Persist for mobile app switching
                     } else if (result.type === 'failure') {
                       promptPayError =
                         (result.data as ActionData)?.error ||
@@ -765,7 +825,7 @@
                     isPromptPayLoading = false;
                     if (result.type === 'success' && result.data?.promptPay) {
                       promptPayResult = result.data.promptPay;
-                      // Manual button-only approach - no automatic polling
+                      savePaymentState(result.data.promptPay); // Persist for mobile app switching
                     } else if (result.type === 'failure') {
                       promptPayError =
                         (result.data as ActionData)?.error ||
