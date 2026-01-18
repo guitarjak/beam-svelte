@@ -133,12 +133,17 @@ export function verifySessionToken(token: string, ip: string): SessionMarker | n
     return null;
   }
 
-  // Verify IP matches (allow 'unknown' for localhost/dev)
-  // In production, both IPs should match for security
+  // Log IP changes but allow them (common on mobile when switching WiFi to cellular)
+  // The token is still HMAC-signed and can't be forged, so this is safe
   const isUnknownIp = marker.ip === 'unknown' || ip === 'unknown';
   if (!isUnknownIp && marker.ip !== ip) {
-    console.warn('[Security] IP mismatch:', { expected: marker.ip, actual: ip });
-    return null;
+    console.warn('[Security] IP changed (common on mobile):', {
+      originalIp: marker.ip,
+      currentIp: ip,
+      referenceId: marker.referenceId
+    });
+    // Continue anyway - IP changes are common when switching from WiFi to cellular
+    // The signed token is still the primary security measure
   }
 
   // Verify not expired (1 hour TTL)
