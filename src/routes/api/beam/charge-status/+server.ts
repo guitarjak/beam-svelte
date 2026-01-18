@@ -34,7 +34,26 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
   }
 
   try {
-    const charge = await getCharge(chargeId);
+    // Add retry logic to handle Beam API race condition
+    // Mirrors the proven retry logic from /checkout/success/+page.server.ts
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [2000, 3000, 4000]; // 2s, 3s, 4s
+
+    console.log('[Status] Fetching charge:', chargeId);
+    let charge = await getCharge(chargeId);
+    console.log('[Status] Initial status:', charge.status);
+
+    // Retry if PENDING (handles race condition where payment succeeded but Beam hasn't updated yet)
+    let retryCount = 0;
+    while (charge.status === 'PENDING' && retryCount < MAX_RETRIES) {
+      const delay = RETRY_DELAYS[retryCount];
+      console.log(`[Status] PENDING, retrying in ${delay}ms (${retryCount + 1}/${MAX_RETRIES})`);
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+      charge = await getCharge(chargeId);
+      console.log(`[Status] After retry ${retryCount + 1}:`, charge.status);
+      retryCount++;
+    }
 
     // Build proper success URL with query parameters for tracking
     let finalSuccessUrl = successUrl || '/checkout/success';

@@ -7,8 +7,8 @@
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
-    "imageUrl": "/images/products/w1w-ticket.png",
-    "logoUrl": "/images/products/w1w-site-logo.png",
+    "imageUrl": "/images/products/w1w-ticket.webp",
+    "logoUrl": "/images/products/w1w-site-logo.webp",
     "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
     "successMessage": {
       "title": "Welcome to Website1Wun!",
@@ -28,8 +28,8 @@
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
-    "imageUrl": "/images/products/dds-key-image.png",
-    "logoUrl": "/images/products/dds-logo.png",
+    "imageUrl": "/images/products/dds-key-image.webp",
+    "logoUrl": "/images/products/dds-logo.webp",
     "webhookUrl": "https://atm.guitarjkp.me/webhook/dds",
     "successMessage": {
       "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
@@ -49,8 +49,8 @@
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
-    "imageUrl": "/images/products/dds-key-image.png",
-    "logoUrl": "/images/products/dds-logo.png",
+    "imageUrl": "/images/products/dds-key-image.webp",
+    "logoUrl": "/images/products/dds-logo.webp",
     "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
     "successMessage": {
       "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",

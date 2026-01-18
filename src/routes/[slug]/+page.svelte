@@ -29,15 +29,11 @@
   let isPromptPayLoading = false;
   let promptPayError = '';
   let promptPayResult: { chargeId: string; qrBase64: string; expiry: string } | null = null;
-  let polling = false;
   let pollingError = '';
-  let pollTimer: ReturnType<typeof setInterval> | null = null;
   let mounted = false;
   let isCheckingStatus = false;           // Prevents concurrent checks
   let lastStatusCheck = 0;                // Timestamp for debouncing
   const STATUS_CHECK_DEBOUNCE = 2000;     // Min 2s between checks
-  let pollingStartTime = 0;               // Track when polling started
-  let currentPollInterval = 3000;         // Dynamic polling interval
 
   // Reactive statement to determine if card error should be shown
   $: showCardError = form?.error && selectedMethod === 'card';
@@ -54,32 +50,6 @@
         content_ids: [data.product.slug]
       });
     }
-
-    // Page Visibility API - auto-check when user returns
-    function handleVisibilityChange() {
-      if (!document.hidden && polling && promptPayResult) {
-        console.log('[Visibility] Page visible, checking payment');
-        checkPaymentStatus();
-      }
-    }
-
-    // Handle bfcache restoration (mobile browser back/forward)
-    function handlePageShow(event: PageTransitionEvent) {
-      if (event.persisted && polling && promptPayResult) {
-        console.log('[BFCache] Page restored, checking payment');
-        checkPaymentStatus();
-      }
-    }
-
-    // Attach event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pageshow', handlePageShow);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pageshow', handlePageShow);
-    };
   });
 
   // Helper: validate email format
@@ -205,88 +175,9 @@
     promptPayError = '';
     pollingError = '';
     promptPayResult = null;
-    stopPolling();
   }
 
-  function stopPolling() {
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
-    polling = false;
-  }
-
-  // Get dynamic polling interval based on elapsed time (exponential backoff)
-  function getPollInterval(): number {
-    const elapsed = Date.now() - pollingStartTime;
-    const oneMinute = 60 * 1000;
-    const threeMinutes = 3 * oneMinute;
-
-    if (elapsed < oneMinute) return 3000;      // 0-1 min: 3s (fast for quick payers)
-    if (elapsed < threeMinutes) return 5000;   // 1-3 min: 5s (moderate)
-    return 10000;                              // 3+ min: 10s (slow, saves resources)
-  }
-
-  // Poll Beam charge status until success/failure/expiry (with exponential backoff)
-  async function pollStatus(chargeId: string, expiryIso: string) {
-    stopPolling();
-    polling = true;
-    pollingStartTime = Date.now();
-    currentPollInterval = 3000;
-
-    async function checkStatus() {
-      // Stop if page is hidden (save Vercel resources)
-      if (document.hidden) {
-        console.log('[Polling] Page hidden, skipping check');
-        return;
-      }
-
-      if (Date.now() > new Date(expiryIso).getTime()) {
-        pollingError = 'QR expired, please try again.';
-        stopPolling();
-        return;
-      }
-
-      try {
-        const res = await fetch(
-          `/api/beam/charge-status?chargeId=${encodeURIComponent(
-            chargeId
-          )}&successUrl=${encodeURIComponent(data.successUrl ?? '')}`
-        );
-        const statusData = await res.json();
-        if (!res.ok) {
-          throw new Error(statusData?.error || 'Status check failed');
-        }
-
-        if (statusData.status === 'SUCCEEDED') {
-          stopPolling();
-          window.location.href = statusData.successUrl ?? '/checkout/success';
-        } else if (statusData.status === 'FAILED' || statusData.status === 'CANCELLED') {
-          pollingError = 'Payment failed. Please try again.';
-          stopPolling();
-        } else {
-          // Status still PENDING - adjust interval for next check
-          const newInterval = getPollInterval();
-          if (newInterval !== currentPollInterval) {
-            currentPollInterval = newInterval;
-            console.log(`[Polling] Adjusted interval to ${newInterval}ms`);
-            // Restart polling with new interval
-            stopPolling();
-            polling = true;
-            pollTimer = setInterval(checkStatus, currentPollInterval);
-          }
-        }
-      } catch (err) {
-        pollingError =
-          err instanceof Error ? err.message : 'Could not check status. Please wait or retry.';
-      }
-    }
-
-    // Start polling
-    pollTimer = setInterval(checkStatus, currentPollInterval);
-  }
-
-  // Manual status check (triggered by button or visibility change)
+  // Manual status check (triggered by button click)
   async function checkPaymentStatus() {
     if (!promptPayResult) return;
     if (isCheckingStatus) return; // Mutex lock
@@ -300,43 +191,55 @@
     // Check QR expiry
     if (Date.now() > new Date(promptPayResult.expiry).getTime()) {
       pollingError = 'QR expired, please try again.';
-      stopPolling();
       return;
     }
 
     isCheckingStatus = true;
     lastStatusCheck = now;
+    console.log('[Manual Check] Button clicked');
 
     try {
+      // Add fetch timeout (10 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const res = await fetch(
         `/api/beam/charge-status?chargeId=${encodeURIComponent(
           promptPayResult.chargeId
-        )}&successUrl=${encodeURIComponent(data.successUrl ?? '')}`
+        )}&successUrl=${encodeURIComponent(data.successUrl ?? '')}`,
+        { signal: controller.signal }
       );
+
+      clearTimeout(timeoutId);
       const statusData = await res.json();
 
       if (!res.ok) {
         throw new Error(statusData?.error || 'Status check failed');
       }
 
+      console.log('[Manual Check] Status received:', statusData.status);
+
       if (statusData.status === 'SUCCEEDED') {
-        stopPolling();
+        console.log('[Manual Check] Redirecting to:', statusData.successUrl);
         window.location.href = statusData.successUrl ?? '/checkout/success';
       } else if (statusData.status === 'FAILED' || statusData.status === 'CANCELLED') {
         pollingError = 'Payment failed. Please try again.';
-        stopPolling();
+      } else {
+        // Status still PENDING
+        pollingError = 'Payment not confirmed yet. Please wait 10 seconds and try again.';
       }
     } catch (err) {
-      console.error('[Status] Check failed:', err);
-      pollingError = err instanceof Error ? err.message : 'Could not check status. Please wait or retry.';
+      console.error('[Manual Check] Error:', err);
+      if (err instanceof Error && err.name === 'AbortError') {
+        pollingError = 'Request timed out. Please check your connection and try again.';
+      } else {
+        pollingError = err instanceof Error ? err.message : 'Could not check status. Please try again.';
+      }
     } finally {
       isCheckingStatus = false;
     }
   }
 
-  onDestroy(() => {
-    stopPolling();
-  });
 </script>
 
 
@@ -735,6 +638,16 @@
 
             {#if promptPayResult}
               <div class="qr-container">
+                <!-- Step-by-step payment instructions -->
+                <div class="payment-instructions">
+                  <p class="instruction-title">ขั้นตอนการชำระเงิน</p>
+                  <ol class="instruction-list">
+                    <li>สแกน QR Code ด้วยแอปธนาคารของคุณ</li>
+                    <li>ยืนยันการชำระเงิน</li>
+                    <li>กลับมาที่หน้านี้และกดปุ่ม "ตรวจสอบสถานะการชำระเงิน"</li>
+                  </ol>
+                </div>
+
                 <div class="qr-wrapper">
                   <img
                     src={`data:image/png;base64,${promptPayResult.qrBase64}`}
@@ -747,12 +660,15 @@
                   Expires at {new Date(promptPayResult.expiry).toLocaleString()}
                 </p>
 
-                <!-- Manual status check button -->
-                {#if polling}
+                <!-- Manual status check button (always visible) -->
+                <div class="check-status-section">
+                  <p class="helper-text">
+                    ✓ ชำระเงินเรียบร้อยแล้ว? กดปุ่มด้านล่างเพื่อตรวจสอบ
+                  </p>
                   <button
                     type="button"
                     on:click={checkPaymentStatus}
-                    class="check-status-button"
+                    class="check-status-button-primary"
                     disabled={isCheckingStatus}
                   >
                     {#if isCheckingStatus}
@@ -766,18 +682,11 @@
                       <span>ตรวจสอบสถานะการชำระเงิน</span>
                     {/if}
                   </button>
-                {/if}
+                </div>
 
                 <div class="qr-status">
                   {#if pollingError}
                     <span class="status-error">{pollingError}</span>
-                  {:else if polling}
-                    <div class="status-loading">
-                      <div class="spinner"></div>
-                      <span>Waiting for payment...</span>
-                    </div>
-                  {:else}
-                    <span class="status-success">Payment successful!</span>
                   {/if}
                 </div>
               </div>
@@ -806,7 +715,7 @@
                     isPromptPayLoading = false;
                     if (result.type === 'success' && result.data?.promptPay) {
                       promptPayResult = result.data.promptPay;
-                      pollStatus(result.data.promptPay.chargeId, result.data.promptPay.expiry);
+                      // Manual button-only approach - no automatic polling
                     } else if (result.type === 'failure') {
                       promptPayError =
                         (result.data as ActionData)?.error ||
@@ -856,7 +765,7 @@
                     isPromptPayLoading = false;
                     if (result.type === 'success' && result.data?.promptPay) {
                       promptPayResult = result.data.promptPay;
-                      pollStatus(result.data.promptPay.chargeId, result.data.promptPay.expiry);
+                      // Manual button-only approach - no automatic polling
                     } else if (result.type === 'failure') {
                       promptPayError =
                         (result.data as ActionData)?.error ||
@@ -1922,6 +1831,94 @@
     border-top-color: var(--slate-600);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* Payment instructions (manual check approach) */
+  .payment-instructions {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .instruction-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--slate-900);
+    margin: 0 0 0.75rem 0;
+    font-family: var(--font-heading);
+  }
+
+  .instruction-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--slate-700);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .instruction-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  .instruction-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Check status section */
+  .check-status-section {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .helper-text {
+    text-align: center;
+    color: var(--slate-600);
+    font-size: 0.9375rem;
+    margin: 0 0 0.875rem 0;
+    font-weight: 500;
+  }
+
+  /* Primary check status button (more prominent) */
+  .check-status-button-primary {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 50px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  }
+
+  .check-status-button-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+  }
+
+  .check-status-button-primary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .check-status-button-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .check-status-button-primary .check-icon {
+    width: 1.25rem;
+    height: 1.25rem;
     flex-shrink: 0;
   }
 
