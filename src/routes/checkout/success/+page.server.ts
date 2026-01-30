@@ -4,16 +4,12 @@ import { getCharge } from '$lib/server/beam';
 import {
   verifySessionToken,
   getClientIp,
-  isWebhookSent,
-  isCAPISent,
-  markWebhookSent,
-  markCAPISent,
-  generateEventId
+  generateEventId,
+  extractSlugFromRef
 } from '$lib/server/security';
 import { getProductBySlug } from '$lib/server/products';
-import { sendN8NWebhook } from '$lib/server/n8n-webhook';
-import { sendFacebookCAPIEvent } from '$lib/server/facebook-capi';
-import { env } from '$env/dynamic/private';
+import { triggerWebhookIfNeeded } from '$lib/server/n8n-webhook';
+import { triggerCAPIIfNeeded } from '$lib/server/facebook-capi';
 
 // SECURITY: Server-side success page validation
 // Only show success if charge status is SUCCEEDED per Beam API
@@ -75,13 +71,6 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
     // Unauthorized access to success page
     error(403, 'Unauthorized access to payment confirmation');
   }
-
-  // Extract product slug from referenceId as fallback (format: pp_SLUG_timestamp_random or order_SLUG_timestamp_random)
-  const extractSlugFromRef = (ref: string): string | undefined => {
-    const parts = ref.split('_');
-    // Format: pp_website1wun_timestamp_random or order_website1wun_timestamp_random
-    return parts.length >= 2 ? parts[1] : undefined;
-  };
 
   const productSlug = sessionMarker.productSlug || extractSlugFromRef(referenceId);
 
@@ -150,132 +139,48 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
 
   console.log('[Success] Charge verified successfully');
 
-  try {
+  // Generate deterministic event_id for deduplication
+  const eventId = generateEventId(referenceId);
+  console.log('[EventID] Generated event_id for deduplication:', eventId, 'from referenceId:', referenceId);
 
-    // Generate deterministic event_id for deduplication
-    const eventId = generateEventId(referenceId);
-    console.log('[EventID] Generated event_id for deduplication:', eventId, 'from referenceId:', referenceId);
+  // Trigger webhook using shared utility (handles deduplication via charge-specific cookie)
+  await triggerWebhookIfNeeded({
+    chargeId,
+    referenceId,
+    productSlug,
+    customerEmail: charge.customer?.email || sessionMarker.email,
+    customerFullName: sessionMarker.fullName
+  }, cookies);
 
-    // Send n8n webhook (if configured and not already sent)
-    // Check cookie first (for serverless persistence), then sessionMarker
-    const webhookAlreadySent = cookies.get('beam_webhook_sent') === 'true' || isWebhookSent(sessionMarker);
+  // Trigger CAPI using shared utility (handles deduplication via charge-specific cookie)
+  await triggerCAPIIfNeeded({
+    chargeId,
+    referenceId,
+    productSlug,
+    customerEmail: charge.customer?.email || sessionMarker.email,
+    fbclid: sessionMarker.fbclid,
+    clientIp,
+    userAgent: request.headers.get('user-agent'),
+    eventSourceUrl: url.toString()
+  }, cookies);
 
-    if (product.webhookUrl && !webhookAlreadySent) {
-      try {
-        console.log('[Webhook] Sending webhook to:', product.webhookUrl);
-        await sendN8NWebhook(product.webhookUrl, {
-          event: 'payment.succeeded',
-          timestamp: new Date().toISOString(),
-          product: {
-            slug: product.slug,
-            name: product.name,
-            price: product.price,
-            currency: product.currency
-          },
-          customer: {
-            email: charge.customer?.email || sessionMarker.email,
-            fullName: sessionMarker.fullName
-          },
-          transaction: {
-            chargeId,
-            referenceId,
-            amount: product.price,
-            currency: product.currency
-          }
-        });
-        console.log('[Webhook] Sent successfully');
-
-        // Mark as sent in both memory AND cookie (for serverless persistence)
-        markWebhookSent(token);
-        cookies.set('beam_webhook_sent', 'true', {
-          path: '/',
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: 60 * 60 // 1 hour
-        });
-      } catch (err) {
-        console.error('[Webhook] Failed:', err);
-        // Continue - don't fail page load
+  return {
+    referenceId,
+    chargeId,
+    verified: true,
+    eventId, // For browser Pixel deduplication
+    product: {
+      // For browser Pixel tracking
+      name: product.name,
+      price: product.price,
+      currency: product.currency,
+      slug: product.slug,
+      logoUrl: product.logoUrl,
+      successMessage: product.successMessage || {
+        title: 'Payment Successful!',
+        description: 'Thank you for your purchase. You will receive a confirmation email shortly.',
+        nextSteps: ['Check your email for order confirmation']
       }
-    } else if (webhookAlreadySent) {
-      console.log('[Webhook] Already sent, skipping');
     }
-
-    // Send Facebook CAPI Purchase event (if configured and not already sent)
-    // Check cookie first (for serverless persistence), then sessionMarker
-    const capiAlreadySent = cookies.get('beam_capi_sent') === 'true' || isCAPISent(sessionMarker);
-
-    // IMPORTANT: Only send CAPI if fbclid exists (indicates Facebook ad traffic)
-    // This prevents organic purchases from being attributed to Facebook ads
-    if (env.FB_PIXEL_ID && env.FB_CAPI_ACCESS_TOKEN && !capiAlreadySent && sessionMarker.fbclid) {
-      try {
-        console.log('[CAPI] Sending Facebook CAPI event (fbclid:', sessionMarker.fbclid, ')');
-        await sendFacebookCAPIEvent({
-          eventName: 'Purchase',
-          eventTime: Math.floor(Date.now() / 1000),
-          eventId: eventId,
-          eventSourceUrl: url.toString(),
-          userData: {
-            em: charge.customer?.email || '',
-            client_ip_address: clientIp,
-            client_user_agent: request.headers.get('user-agent') || ''
-          },
-          customData: {
-            value: product.price / 100, // Convert satang to THB
-            currency: product.currency,
-            content_name: product.name,
-            content_ids: [product.slug]
-          }
-        });
-        console.log('[CAPI] Sent successfully');
-
-        // Mark as sent in both memory AND cookie (for serverless persistence)
-        markCAPISent(token);
-        cookies.set('beam_capi_sent', 'true', {
-          path: '/',
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: 60 * 60 // 1 hour
-        });
-      } catch (err) {
-        console.error('[CAPI] Failed:', err);
-        // Continue - don't fail page load
-      }
-    } else if (capiAlreadySent) {
-      console.log('[CAPI] Already sent, skipping');
-    } else if (!sessionMarker.fbclid) {
-      console.log('[CAPI] Skipping - no fbclid found (organic traffic, not from Facebook ads)');
-    }
-
-    return {
-      referenceId,
-      chargeId,
-      verified: true,
-      eventId, // For browser Pixel deduplication
-      product: {
-        // For browser Pixel tracking
-        name: product.name,
-        price: product.price,
-        currency: product.currency,
-        slug: product.slug,
-        logoUrl: product.logoUrl,
-        successMessage: product.successMessage || {
-          title: 'Payment Successful!',
-          description: 'Thank you for your purchase. You will receive a confirmation email shortly.',
-          nextSteps: ['Check your email for order confirmation']
-        }
-      }
-    };
-  } catch (err) {
-    console.error('[Success] Failed during webhook/CAPI:', err);
-    console.error('[Success] Error type:', typeof err);
-    console.error('[Success] Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
-
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    console.error('[Success] Final error message:', errorMessage);
-
-    error(500, 'Payment succeeded but notification failed. Please contact support with your order reference.');
-  }
+  };
 };

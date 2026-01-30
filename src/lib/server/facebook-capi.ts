@@ -5,6 +5,9 @@
 
 import { env } from '$env/dynamic/private';
 import { createHash } from 'crypto';
+import type { Cookies } from '@sveltejs/kit';
+import { getProductBySlug } from '$lib/server/products';
+import { generateEventId } from '$lib/server/security';
 
 export interface FacebookPurchaseEvent {
   eventName: 'Purchase';
@@ -115,6 +118,99 @@ export async function sendFacebookCAPIEvent(event: FacebookPurchaseEvent): Promi
     } else {
       console.error('[Facebook CAPI] Unknown error occurred');
     }
+    return false;
+  }
+}
+
+export interface TriggerCAPIParams {
+  chargeId: string;
+  referenceId: string;
+  productSlug: string;
+  customerEmail?: string;
+  fbclid?: string;
+  clientIp: string;
+  userAgent: string | null;
+  eventSourceUrl: string;
+}
+
+/**
+ * Trigger Facebook CAPI event if not already sent (with cookie-based deduplication)
+ * Only sends if fbclid exists (indicates Facebook ad traffic)
+ * @param params - CAPI parameters
+ * @param cookies - SvelteKit cookies object
+ * @returns Promise<boolean> - true if event was sent, false if skipped or failed
+ */
+export async function triggerCAPIIfNeeded(
+  params: TriggerCAPIParams,
+  cookies: Cookies
+): Promise<boolean> {
+  const { chargeId, referenceId, productSlug, customerEmail, fbclid, clientIp, userAgent, eventSourceUrl } = params;
+  const cookieName = `beam_capi_sent_${chargeId}`;
+
+  // Only send CAPI if fbclid exists (indicates Facebook ad traffic)
+  if (!fbclid) {
+    console.log('[CAPI] Skipping - no fbclid found (organic traffic, not from Facebook ads)');
+    return false;
+  }
+
+  // Check if CAPI is configured
+  if (!env.FB_PIXEL_ID || !env.FB_CAPI_ACCESS_TOKEN) {
+    console.log('[CAPI] Skipping - Facebook CAPI not configured');
+    return false;
+  }
+
+  // Check cookie-based deduplication
+  if (cookies.get(cookieName) === 'true') {
+    console.log('[CAPI] Already sent for chargeId (cookie):', chargeId);
+    return false;
+  }
+
+  // Look up product
+  const product = getProductBySlug(productSlug);
+  if (!product) {
+    console.error('[CAPI] Product not found for slug:', productSlug);
+    return false;
+  }
+
+  try {
+    // Generate deterministic event_id for deduplication
+    const eventId = generateEventId(referenceId);
+    console.log('[CAPI] Sending Facebook CAPI event (fbclid:', fbclid, ', eventId:', eventId, ')');
+
+    const success = await sendFacebookCAPIEvent({
+      eventName: 'Purchase',
+      eventTime: Math.floor(Date.now() / 1000),
+      eventId: eventId,
+      eventSourceUrl: eventSourceUrl,
+      userData: {
+        em: customerEmail || '',
+        client_ip_address: clientIp,
+        client_user_agent: userAgent || ''
+      },
+      customData: {
+        value: product.price / 100, // Convert satang to THB
+        currency: product.currency,
+        content_name: product.name,
+        content_ids: [product.slug]
+      }
+    });
+
+    if (success) {
+      // Set deduplication cookie (24 hour TTL)
+      cookies.set(cookieName, 'true', {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 // 24 hours
+      });
+      console.log('[CAPI] Sent successfully, dedup cookie set');
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    console.error('[CAPI] Failed:', err);
     return false;
   }
 }

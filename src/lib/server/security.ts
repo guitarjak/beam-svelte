@@ -275,6 +275,17 @@ export function isCAPISent(marker: SessionMarker): boolean {
 }
 
 /**
+ * Extract product slug from referenceId
+ * Format: pp_SLUG_timestamp_random or order_SLUG_timestamp_random
+ * @param ref - Reference ID string
+ * @returns Product slug or undefined
+ */
+export function extractSlugFromRef(ref: string): string | undefined {
+  const parts = ref.split('_');
+  return parts.length >= 2 ? parts[1] : undefined;
+}
+
+/**
  * Generate deterministic event ID for Facebook deduplication
  * Uses MD5 hash to ensure same referenceId always produces same eventId
  * @param referenceId - Order reference ID

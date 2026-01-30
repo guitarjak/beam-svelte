@@ -1,7 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { getCharge } from '$lib/server/beam';
 import type { RequestHandler } from './$types';
-import { isRateLimited, verifySessionToken, getClientIp } from '$lib/server/security';
+import { isRateLimited, verifySessionToken, getClientIp, extractSlugFromRef } from '$lib/server/security';
+import { triggerWebhookIfNeeded } from '$lib/server/n8n-webhook';
+import { triggerCAPIIfNeeded } from '$lib/server/facebook-capi';
 
 // SECURITY: Protected charge status endpoint
 // Requires valid session token to prevent unauthorized status queries
@@ -60,6 +62,38 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 
     // Add query parameters if status is SUCCEEDED
     if (charge.status === 'SUCCEEDED') {
+      // Extract product slug and trigger webhook/CAPI
+      const productSlug = sessionMarker.productSlug || extractSlugFromRef(sessionMarker.referenceId);
+
+      if (productSlug) {
+        // Build event source URL for CAPI
+        const origin = request.headers.get('origin') || url.origin;
+        const eventSourceUrl = `${origin}/checkout/success?ref=${sessionMarker.referenceId}&chargeId=${chargeId}`;
+
+        // Trigger webhook (with deduplication)
+        await triggerWebhookIfNeeded({
+          chargeId,
+          referenceId: sessionMarker.referenceId,
+          productSlug,
+          customerEmail: sessionMarker.email,
+          customerFullName: sessionMarker.fullName
+        }, cookies);
+
+        // Trigger CAPI (with deduplication, only if fbclid exists)
+        await triggerCAPIIfNeeded({
+          chargeId,
+          referenceId: sessionMarker.referenceId,
+          productSlug,
+          customerEmail: sessionMarker.email,
+          fbclid: sessionMarker.fbclid,
+          clientIp,
+          userAgent: request.headers.get('user-agent'),
+          eventSourceUrl
+        }, cookies);
+      } else {
+        console.warn('[Status] Could not extract product slug from referenceId:', sessionMarker.referenceId);
+      }
+
       const urlParams = new URLSearchParams({
         ref: sessionMarker.referenceId,
         chargeId: chargeId

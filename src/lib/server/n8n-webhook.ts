@@ -3,6 +3,9 @@
  * Sends webhook notifications to n8n workflows with retry logic
  */
 
+import type { Cookies } from '@sveltejs/kit';
+import { getProductBySlug } from '$lib/server/products';
+
 export interface N8NWebhookPayload {
   event: 'payment.succeeded';
   timestamp: string;
@@ -14,6 +17,7 @@ export interface N8NWebhookPayload {
   };
   customer: {
     email?: string;
+    fullName?: string;
   };
   transaction: {
     chargeId: string;
@@ -85,4 +89,87 @@ export async function sendN8NWebhook(url: string, payload: N8NWebhookPayload): P
 
   console.error(`[N8N Webhook] All ${maxRetries} attempts failed for ${url}`);
   return false;
+}
+
+export interface TriggerWebhookParams {
+  chargeId: string;
+  referenceId: string;
+  productSlug: string;
+  customerEmail?: string;
+  customerFullName?: string;
+}
+
+/**
+ * Trigger webhook if not already sent (with cookie-based deduplication)
+ * @param params - Webhook parameters
+ * @param cookies - SvelteKit cookies object
+ * @returns Promise<boolean> - true if webhook was sent, false if skipped or failed
+ */
+export async function triggerWebhookIfNeeded(
+  params: TriggerWebhookParams,
+  cookies: Cookies
+): Promise<boolean> {
+  const { chargeId, referenceId, productSlug, customerEmail, customerFullName } = params;
+  const cookieName = `beam_webhook_sent_${chargeId}`;
+
+  // Check cookie-based deduplication
+  if (cookies.get(cookieName) === 'true') {
+    console.log('[Webhook] Already sent for chargeId (cookie):', chargeId);
+    return false;
+  }
+
+  // Look up product
+  const product = getProductBySlug(productSlug);
+  if (!product) {
+    console.error('[Webhook] Product not found for slug:', productSlug);
+    return false;
+  }
+
+  // Check if product has webhook URL configured
+  if (!product.webhookUrl) {
+    console.log('[Webhook] No webhook URL configured for product:', productSlug);
+    return false;
+  }
+
+  try {
+    console.log('[Webhook] Sending webhook to:', product.webhookUrl);
+    const success = await sendN8NWebhook(product.webhookUrl, {
+      event: 'payment.succeeded',
+      timestamp: new Date().toISOString(),
+      product: {
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        currency: product.currency
+      },
+      customer: {
+        email: customerEmail,
+        fullName: customerFullName
+      },
+      transaction: {
+        chargeId,
+        referenceId,
+        amount: product.price,
+        currency: product.currency
+      }
+    });
+
+    if (success) {
+      // Set deduplication cookie (24 hour TTL)
+      cookies.set(cookieName, 'true', {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 // 24 hours
+      });
+      console.log('[Webhook] Sent successfully, dedup cookie set');
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    console.error('[Webhook] Failed:', err);
+    return false;
+  }
 }
