@@ -3,7 +3,7 @@
     "slug": "website1wun",
     "name": "Founder's Ticket",
     "description": "ตั๋วพิเศษสำหรับสมาชิกรุ่นแรก เพื่อเข้าร่วมคลาส Website1Wun ที่จะทำให้คุณสามารถสร้าง Website ได้ภายในวันเดียว แบบไม่ต้องมีพื้นฐานมาก่อน เย้",
-    "price": 149000,
+    "price": 249000,
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
