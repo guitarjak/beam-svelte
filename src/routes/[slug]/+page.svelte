@@ -784,56 +784,6 @@
                 </div>
               </div>
 
-              <form
-                method="POST"
-                action="?/payWithPromptPay"
-                use:enhance={() => {
-                  // PREVENT DOUBLE SUBMIT: Return immediately if already loading
-                  if (isPromptPayLoading) {
-                    return async () => {};
-                  }
-
-                  // Validate full name and email
-                  if (!fullName || fullName.trim() === '') {
-                    fullNameError = true;
-                    return async () => {};
-                  }
-                  if (!email || email.trim() === '' || !isValidEmail(email)) {
-                    emailError = true;
-                    return async () => {};
-                  }
-                  isPromptPayLoading = true;
-                  resetPromptPayState();
-                  return async ({ result, update }) => {
-                    isPromptPayLoading = false;
-                    if (result.type === 'success' && result.data?.promptPay) {
-                      promptPayResult = result.data.promptPay;
-                      savePaymentState(result.data.promptPay); // Persist for mobile app switching
-                      startAutoPolling();
-                    } else if (result.type === 'failure') {
-                      promptPayError =
-                        (result.data as ActionData)?.error ||
-                        'Could not start PromptPay. Please try again.';
-                      await update();
-                    } else {
-                      await update();
-                    }
-                  };
-                }}
-              >
-                <input type="hidden" name="email" bind:value={email} />
-                <input type="hidden" name="fullName" bind:value={fullName} />
-                {#if data.fbclid}
-                  <input type="hidden" name="fbclid" value={data.fbclid} />
-                {/if}
-                <button
-                  type="submit"
-                  class="cta-button secondary"
-                  disabled={isPromptPayLoading}
-                >
-                  {isPromptPayLoading ? 'Refreshing...' : 'Generate new QR'}
-                </button>
-              </form>
             {:else}
               <form
                 method="POST"
