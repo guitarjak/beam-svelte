@@ -10,7 +10,6 @@
 
   // Get query parameters
   $: referenceId = $page.url.searchParams.get('ref');
-  $: chargeId = $page.url.searchParams.get('chargeId');
 
   // Track Facebook Pixel Purchase event on mount
   onMount(() => {
@@ -47,27 +46,29 @@
       </div>
     </div>
 
-    <!-- Custom Success Message -->
-    <h1>{data.product?.successMessage?.title || 'Payment Successful!'}</h1>
+    <h1>ขอบคุณสำหรับการสั่งซื้อค้าบ!</h1>
 
     <p class="success-description">
-      {data.product?.successMessage?.description || 'Thank you for your purchase. Your payment has been processed successfully.'}
+      ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5…4…3…2…1 ปิ้งง ไปแล้วค้าบ
     </p>
 
-    <!-- Next Steps Section -->
-    {#if data.product?.successMessage?.nextSteps && data.product.successMessage.nextSteps.length > 0}
-      <div class="next-steps">
-        <h2 class="next-steps-title">What's Next?</h2>
-        <ul class="next-steps-list">
-          {#each data.product.successMessage.nextSteps as step, index}
-            <li class="step-item">
-              <div class="step-number">{index + 1}</div>
-              <span class="step-text">{step}</span>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/if}
+    <div class="next-steps">
+      <h2 class="next-steps-title">What’s Next? (ทำยังไงต่อ)</h2>
+      <ul class="next-steps-list">
+        <li class="step-item">
+          <div class="step-number">1</div>
+          <span class="step-text">ไปที่ Email ที่เรากรอกไว้ตอนสั่งซื้อ</span>
+        </li>
+        <li class="step-item">
+          <div class="step-number">2</div>
+          <span class="step-text">เปิด Email ของเราเพื่อดูรายละเอียดการสั่งซื้อได้เลย</span>
+        </li>
+        <li class="step-item">
+          <div class="step-number">3</div>
+          <span class="step-text">ถ้าไม่เจอผมรบกวนดูใน junk/spam หน่อยนะค้าบ</span>
+        </li>
+      </ul>
+    </div>
 
     <!-- Order Details -->
     <div class="order-details">
@@ -78,16 +79,10 @@
         </div>
       {/if}
 
-      {#if chargeId}
-        <div class="order-info">
-          <p class="info-label">Transaction ID</p>
-          <p class="info-value">{chargeId}</p>
-        </div>
-      {/if}
     </div>
 
     <p class="help-text">
-      ต้องการความช่วยเหลือ?<br> ติดต่อผมได้ที่ <a href="mailto:guitar@deadsimpleproductivity.com" class="email-link">Email</a> นี้เลยค้าบ
+      ยังไม่ได้รับ email หรือต้องการความช่วยเหลือ<br>สามารถติดต่อผมได้ที่ <a href="mailto:guitar@deadsimpleproductivity.com" class="email-link">Email</a> นี้เลยค้าบ
     </p>
   </div>
 </div>

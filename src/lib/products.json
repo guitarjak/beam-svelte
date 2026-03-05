@@ -8,16 +8,7 @@
     "active": true,
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/w1w-ticket.webp",
-    "logoUrl": "/images/products/w1w-site-logo.webp",
-    "successMessage": {
-      "title": "Welcome to Website1Wun!",
-      "description": "รายละเอียดส่งไปทาง Email ของเรานะค้าบ (มาจาก guitar@website1wun.com) ผมรบกวนช่วยเช็คใน junk / promotions หน่อยนะค้าบ",
-      "nextSteps": [
-        "1. รอประมาณ 5 นาทีและเช็ค Email รายละเอียดการสั่งซื้อ",
-        "2. รายละเอียดการ Login จะถูกส่งไปทาง Email ของเรา",
-        "3. ชงกาแฟซักแก้ว แล้วเข้ามาลุยได้เลย เย้"
-      ]
-    }
+    "logoUrl": "/images/products/w1w-site-logo.webp"
   },
   {
     "slug": "digital-delivery-system",
@@ -28,16 +19,7 @@
     "active": true,
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/dds-key-image.webp",
-    "logoUrl": "/images/products/dds-logo.webp",
-    "successMessage": {
-      "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
-      "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",
-      "nextSteps": [
-        "1. เช็ค Email ของเราเพื่อเอารหัสเข้าคู่มือ DDS",
-        "2. เปิดลิงก์ที่อยู่ใน Email และใส่รหัสได้เลย",
-        "3. ชงกาแฟซักแก้ว แล้วลุยกันได้เลยค้าบ"
-      ]
-    }
+    "logoUrl": "/images/products/dds-logo.webp"
   },
   {
     "slug": "demo",
@@ -48,15 +30,6 @@
     "active": true,
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/dds-key-image.webp",
-    "logoUrl": "/images/products/dds-logo.webp",
-    "successMessage": {
-      "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
-      "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",
-      "nextSteps": [
-        "เช็ค Email ของเราเพื่อเอารหัสเข้าคู่มือ DDS",
-        "เปิดลิงก์ที่อยู่ใน Email และใส่รหัสได้เลย",
-        "ชงกาแฟซักแก้ว แล้วลุยกันได้เลยค้าบ"
-      ]
-    }
+    "logoUrl": "/images/products/dds-logo.webp"
   }
 ]
