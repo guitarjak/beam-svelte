@@ -2,7 +2,6 @@ import { json } from '@sveltejs/kit';
 import { getCharge } from '$lib/server/beam';
 import type { RequestHandler } from './$types';
 import { isRateLimited, verifySessionToken, getClientIp, extractSlugFromRef } from '$lib/server/security';
-import { triggerWebhookIfNeeded } from '$lib/server/n8n-webhook';
 import { triggerCAPIIfNeeded } from '$lib/server/facebook-capi';
 
 // SECURITY: Protected charge status endpoint
@@ -69,15 +68,6 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
         // Build event source URL for CAPI
         const origin = request.headers.get('origin') || url.origin;
         const eventSourceUrl = `${origin}/checkout/success?ref=${sessionMarker.referenceId}&chargeId=${chargeId}`;
-
-        // Trigger webhook (with deduplication)
-        await triggerWebhookIfNeeded({
-          chargeId,
-          referenceId: sessionMarker.referenceId,
-          productSlug,
-          customerEmail: sessionMarker.email,
-          customerFullName: sessionMarker.fullName
-        }, cookies);
 
         // Trigger CAPI (with deduplication, only if fbclid exists)
         await triggerCAPIIfNeeded({

@@ -15,6 +15,7 @@ import {
 } from '$lib/server/security';
 
 const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL || '';
+const CHECKOUT_METADATA_WEBHOOK_URL = env.CHECKOUT_METADATA_WEBHOOK_URL || '';
 
 // SECURITY: URL allowlist for redirect protection
 // Only allow redirects to these domains (prevents open redirect vulnerability)
@@ -56,6 +57,49 @@ function buildSuccessUrl(base: string | undefined, extraParams: Record<string, s
   });
 
   return url.toString();
+}
+
+type CheckoutMetadataPayload = {
+  event: 'checkout.metadata.created';
+  timestamp: string;
+  referenceId: string;
+  chargeId: string;
+  productSlug: string;
+  amount: number;
+  currency: string;
+  customer: {
+    email?: string;
+    fullName?: string;
+  };
+  paymentMethodType: 'CARD_TOKEN' | 'QR_PROMPT_PAY';
+};
+
+async function sendCheckoutMetadata(payload: CheckoutMetadataPayload): Promise<void> {
+  if (!CHECKOUT_METADATA_WEBHOOK_URL) return;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(CHECKOUT_METADATA_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Beam-Checkout/1.0'
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.error('[Checkout Metadata] Webhook failed:', response.status, body);
+    }
+  } catch (err) {
+    console.error('[Checkout Metadata] Webhook request error:', err);
+  }
 }
 
 // Load product data based on the slug from the URL
@@ -165,6 +209,21 @@ export const actions = {
         referenceId,
         returnUrl: returnUrl,
         customer: email ? { email } : undefined
+      });
+
+      await sendCheckoutMetadata({
+        event: 'checkout.metadata.created',
+        timestamp: new Date().toISOString(),
+        referenceId,
+        chargeId: charge.chargeId,
+        productSlug: slug,
+        amount: product.price,
+        currency: product.currency,
+        customer: {
+          email: email || undefined,
+          fullName: fullName || undefined
+        },
+        paymentMethodType: 'CARD_TOKEN'
       });
 
       // SECURITY: Scrub CVV and token from memory immediately after use
@@ -285,6 +344,21 @@ export const actions = {
         referenceId,
         returnUrl: buildSuccessUrl(successUrl, { ref: referenceId, token: sessionToken }),
         customer: email ? { email } : undefined
+      });
+
+      await sendCheckoutMetadata({
+        event: 'checkout.metadata.created',
+        timestamp: new Date().toISOString(),
+        referenceId,
+        chargeId: charge.chargeId,
+        productSlug: slug,
+        amount: product.price,
+        currency: product.currency,
+        customer: {
+          email: email || undefined,
+          fullName: fullName || undefined
+        },
+        paymentMethodType: 'QR_PROMPT_PAY'
       });
 
       if (charge.actionRequired !== 'ENCODED_IMAGE' || !charge.encodedImage?.imageBase64Encoded) {

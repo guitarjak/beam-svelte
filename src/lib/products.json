@@ -9,7 +9,6 @@
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/w1w-ticket.webp",
     "logoUrl": "/images/products/w1w-site-logo.webp",
-    "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
     "successMessage": {
       "title": "Welcome to Website1Wun!",
       "description": "รายละเอียดส่งไปทาง Email ของเรานะค้าบ (มาจาก guitar@website1wun.com) ผมรบกวนช่วยเช็คใน junk / promotions หน่อยนะค้าบ",
@@ -30,7 +29,6 @@
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/dds-key-image.webp",
     "logoUrl": "/images/products/dds-logo.webp",
-    "webhookUrl": "https://atm.guitarjkp.me/webhook/dds",
     "successMessage": {
       "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
       "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",
@@ -51,7 +49,6 @@
     "successUrl": "/checkout/success",
     "imageUrl": "/images/products/dds-key-image.webp",
     "logoUrl": "/images/products/dds-logo.webp",
-    "webhookUrl": "https://atm.guitarjkp.me/webhook/beam-checkout-prd",
     "successMessage": {
       "title": "ขอบคุณสำหรับการสั่งซื้อ DDS ค้าบ!",
       "description": "ระบบอัตโนมัติกำลังส่งรายละเอียดไปยัง Email ของเราภายใน 5, 4, 3, 2, 1 ปิ้งง ไปแล้วว",

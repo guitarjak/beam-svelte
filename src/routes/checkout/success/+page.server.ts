@@ -8,7 +8,6 @@ import {
   extractSlugFromRef
 } from '$lib/server/security';
 import { getProductBySlug } from '$lib/server/products';
-import { triggerWebhookIfNeeded } from '$lib/server/n8n-webhook';
 import { triggerCAPIIfNeeded } from '$lib/server/facebook-capi';
 
 // SECURITY: Server-side success page validation
@@ -142,15 +141,6 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
   // Generate deterministic event_id for deduplication
   const eventId = generateEventId(referenceId);
   console.log('[EventID] Generated event_id for deduplication:', eventId, 'from referenceId:', referenceId);
-
-  // Trigger webhook using shared utility (handles deduplication via charge-specific cookie)
-  await triggerWebhookIfNeeded({
-    chargeId,
-    referenceId,
-    productSlug,
-    customerEmail: charge.customer?.email || sessionMarker.email,
-    customerFullName: sessionMarker.fullName
-  }, cookies);
 
   // Trigger CAPI using shared utility (handles deduplication via charge-specific cookie)
   await triggerCAPIIfNeeded({
