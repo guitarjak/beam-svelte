@@ -262,7 +262,7 @@
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const res = await fetch(
-        `/api/beam/charge-status?chargeId=${encodeURIComponent(
+        `/api/payment-status?chargeId=${encodeURIComponent(
           promptPayResult.chargeId
         )}&successUrl=${encodeURIComponent(data.successUrl ?? '')}`,
         { signal: controller.signal }
