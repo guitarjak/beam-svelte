@@ -133,7 +133,12 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
       chargeId: chargeId
     });
     const reason = charge.status === 'PENDING' ? 'pending' : 'failed';
-    redirect(303, `/checkout/failed?reason=${reason}&chargeId=${chargeId}`);
+    const failedParams = new URLSearchParams({
+      reason,
+      chargeId,
+      slug: productSlug
+    });
+    redirect(303, `/checkout/failed?${failedParams.toString()}`);
   }
 
   console.log('[Success] Charge verified successfully');

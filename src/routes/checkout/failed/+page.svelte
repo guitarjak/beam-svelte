@@ -1,5 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import type { PageData } from './$types';
+
+  export let data: PageData;
 
   $: reason = $page.url.searchParams.get('reason') || 'unknown';
   $: chargeId = $page.url.searchParams.get('chargeId') || '';
@@ -49,7 +52,7 @@
         <button on:click={() => window.location.reload()} class="btn btn-primary">Check Status</button>
         <a href="mailto:guitar@deadsimpleproductivity.com" class="btn btn-secondary">Contact Support</a>
       {:else}
-        <a href="/" class="btn btn-primary">Try Again</a>
+        <a href={data.retryUrl} class="btn btn-primary">Try Again</a>
         <a href="mailto:guitar@deadsimpleproductivity.com" class="btn btn-secondary">Contact Support</a>
       {/if}
     </div>

@@ -1,12 +1,28 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getCharge } from '$lib/server/beam';
+import { verifySessionToken, getClientIp } from '$lib/server/security';
 
 // RECOVERY: Check if payment has succeeded since initial check
 // If chargeId is provided and status is now SUCCEEDED, redirect to success page
-export const load: PageServerLoad = async ({ url, cookies }) => {
+export const load: PageServerLoad = async ({ url, cookies, request }) => {
   const reason = url.searchParams.get('reason');
   const chargeId = url.searchParams.get('chargeId');
+  const slugFromQuery = url.searchParams.get('slug');
+  const clientIp = getClientIp(request);
+
+  let retryUrl = '/';
+  if (slugFromQuery) {
+    retryUrl = `/${slugFromQuery}`;
+  }
+
+  const token = cookies.get('beam_session') || '';
+  if (token) {
+    const marker = verifySessionToken(token, clientIp);
+    if (marker?.productSlug) {
+      retryUrl = `/${marker.productSlug}`;
+    }
+  }
 
   console.log('[Failed] Page load:', { reason, chargeId });
 
@@ -38,6 +54,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
   return {
     reason,
-    chargeId
+    chargeId,
+    retryUrl
   };
 };
