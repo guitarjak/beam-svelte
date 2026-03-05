@@ -24,7 +24,7 @@ function getRecordsFromResponse(payload: unknown): NocoRecord[] {
 
 function normalizeStatus(value: unknown): PaymentStatus {
   if (typeof value !== 'string') return 'UNKNOWN';
-  const status = value.toUpperCase();
+  const status = value.trim().toUpperCase();
 
   if (status === 'PENDING') return 'PENDING';
   if (status === 'SUCCEEDED' || status === 'SUCCESS' || status === 'SUCCEED') return 'SUCCEEDED';

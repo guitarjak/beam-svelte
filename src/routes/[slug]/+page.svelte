@@ -34,6 +34,8 @@
   let isCheckingStatus = false;           // Prevents concurrent checks
   let lastStatusCheck = 0;                // Timestamp for debouncing
   const STATUS_CHECK_DEBOUNCE = 2000;     // Min 2s between checks
+  let autoPollInterval: ReturnType<typeof setInterval> | null = null;
+  const AUTO_POLL_MS = 5000;
 
   // SessionStorage key for persisting payment state (survives page reloads on mobile)
   const STORAGE_KEY = `promptpay_${data.product.slug}`;
@@ -95,6 +97,7 @@
       promptPayResult = restoredState;
       selectedMethod = 'promptpay';
       console.log('[Mount] Restored pending payment, chargeId:', restoredState.chargeId);
+      startAutoPolling();
     }
 
     // Track Facebook Pixel InitiateCheckout event
@@ -106,6 +109,10 @@
         content_ids: [data.product.slug]
       });
     }
+  });
+
+  onDestroy(() => {
+    stopAutoPolling();
   });
 
   // Helper: validate email format
@@ -231,11 +238,31 @@
     promptPayError = '';
     pollingError = '';
     promptPayResult = null;
+    stopAutoPolling();
     clearPaymentState(); // Clear persisted state
   }
 
+  function stopAutoPolling() {
+    if (autoPollInterval) {
+      clearInterval(autoPollInterval);
+      autoPollInterval = null;
+    }
+  }
+
+  function startAutoPolling() {
+    stopAutoPolling();
+    if (!promptPayResult) return;
+
+    // Try immediately first, then continue polling.
+    void checkPaymentStatus(true);
+
+    autoPollInterval = setInterval(() => {
+      void checkPaymentStatus(true);
+    }, AUTO_POLL_MS);
+  }
+
   // Manual status check (triggered by button click)
-  async function checkPaymentStatus() {
+  async function checkPaymentStatus(silent = false) {
     if (!promptPayResult) return;
     if (isCheckingStatus) return; // Mutex lock
 
@@ -279,21 +306,27 @@
 
       if (statusData.status === 'SUCCEEDED') {
         console.log('[Manual Check] Redirecting to:', statusData.successUrl);
+        stopAutoPolling();
         clearPaymentState(); // Clear persisted state before redirect
         window.location.href = statusData.successUrl ?? '/checkout/success';
       } else if (statusData.status === 'FAILED' || statusData.status === 'CANCELLED') {
+        stopAutoPolling();
         pollingError = 'Payment failed. Please try again.';
         clearPaymentState(); // Clear persisted state
       } else {
         // Status still PENDING
-        pollingError = 'Payment not confirmed yet. Please wait 10 seconds and try again.';
+        if (!silent) {
+          pollingError = 'Payment not confirmed yet. Please wait 10 seconds and try again.';
+        }
       }
     } catch (err) {
       console.error('[Manual Check] Error:', err);
-      if (err instanceof Error && err.name === 'AbortError') {
-        pollingError = 'Request timed out. Please check your connection and try again.';
-      } else {
-        pollingError = err instanceof Error ? err.message : 'Could not check status. Please try again.';
+      if (!silent) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          pollingError = 'Request timed out. Please check your connection and try again.';
+        } else {
+          pollingError = err instanceof Error ? err.message : 'Could not check status. Please try again.';
+        }
       }
     } finally {
       isCheckingStatus = false;
@@ -776,6 +809,7 @@
                     if (result.type === 'success' && result.data?.promptPay) {
                       promptPayResult = result.data.promptPay;
                       savePaymentState(result.data.promptPay); // Persist for mobile app switching
+                      startAutoPolling();
                     } else if (result.type === 'failure') {
                       promptPayError =
                         (result.data as ActionData)?.error ||
@@ -826,6 +860,7 @@
                     if (result.type === 'success' && result.data?.promptPay) {
                       promptPayResult = result.data.promptPay;
                       savePaymentState(result.data.promptPay); // Persist for mobile app switching
+                      startAutoPolling();
                     } else if (result.type === 'failure') {
                       promptPayError =
                         (result.data as ActionData)?.error ||
