@@ -731,16 +731,6 @@
 
             {#if promptPayResult}
               <div class="qr-container">
-                <!-- Step-by-step payment instructions -->
-                <div class="payment-instructions">
-                  <p class="instruction-title">ขั้นตอนการชำระเงิน</p>
-                  <ol class="instruction-list">
-                    <li>สแกน QR Code ด้วยแอปธนาคารของคุณ</li>
-                    <li>ยืนยันการชำระเงิน</li>
-                    <li>กลับมาที่หน้านี้และกดปุ่ม "ตรวจสอบสถานะการชำระเงิน"</li>
-                  </ol>
-                </div>
-
                 <div class="qr-wrapper">
                   <img
                     src={`data:image/png;base64,${promptPayResult.qrBase64}`}
