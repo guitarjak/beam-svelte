@@ -11,15 +11,15 @@
     "logoUrl": "/images/products/w1w-site-logo.webp"
   },
   {
-    "slug": "digital-delivery-system",
-    "name": "DDS Full System",
-    "description": "ระบบส่งสินค้าที่เราสามารถเอาไปใช้เอง เซ็ทเองได้แบบง่ายๆ ใช้ได้กับทั้งเพจ ทั้งเว็บไซค์ หรือช่องทางการขายที่สามารถแปะลิงก์ได้ทุกที่เลย",
-    "price": 129000,
+    "slug": "ovm",
+    "name": "Online Vending Machine",
+    "description": "สร้างตู้ขายสินค้าออนไลน์ของเรา พร้อมระบบรับเงินและส่งสินค้าอัตโนมัติ 24/7 เปลี่ยนคุณกลายเป็นเซเว่นดีๆ นี่เอง ฮ่าา",
+    "price": 489000,
     "currency": "THB",
     "active": true,
     "successUrl": "/checkout/success",
-    "imageUrl": "/images/products/dds-key-image.webp",
-    "logoUrl": "/images/products/dds-logo.webp"
+    "imageUrl": "/images/products/ovm-ticket.png",
+    "logoUrl": "/images/products/ovm-logo.png"
   },
   {
     "slug": "demo",
