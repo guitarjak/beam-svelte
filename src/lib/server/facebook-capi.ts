@@ -7,7 +7,7 @@ import { env } from '$env/dynamic/private';
 import { createHash } from 'crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { getProductBySlug } from '$lib/server/products';
-import { generateEventId } from '$lib/server/security';
+import { generateEventId, normalizeFbclid } from '$lib/server/security';
 
 export interface FacebookPurchaseEvent {
   eventName: 'Purchase';
@@ -146,9 +146,10 @@ export async function triggerCAPIIfNeeded(
 ): Promise<boolean> {
   const { chargeId, referenceId, productSlug, customerEmail, fbclid, clientIp, userAgent, eventSourceUrl } = params;
   const cookieName = `beam_capi_sent_${chargeId}`;
+  const validFbclid = normalizeFbclid(fbclid);
 
   // Only send CAPI if fbclid exists (indicates Facebook ad traffic)
-  if (!fbclid) {
+  if (!validFbclid) {
     console.log('[CAPI] Skipping - no fbclid found (organic traffic, not from Facebook ads)');
     return false;
   }
@@ -175,7 +176,7 @@ export async function triggerCAPIIfNeeded(
   try {
     // Generate deterministic event_id for deduplication
     const eventId = generateEventId(referenceId);
-    console.log('[CAPI] Sending Facebook CAPI event (fbclid:', fbclid, ', eventId:', eventId, ')');
+    console.log('[CAPI] Sending Facebook CAPI event (fbclid:', validFbclid, ', eventId:', eventId, ')');
 
     const success = await sendFacebookCAPIEvent({
       eventName: 'Purchase',

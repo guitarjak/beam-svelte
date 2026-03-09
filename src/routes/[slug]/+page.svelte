@@ -101,7 +101,7 @@
     }
 
     // Track Facebook Pixel InitiateCheckout event
-    if (publicEnv.PUBLIC_FB_PIXEL_ID) {
+    if (publicEnv.PUBLIC_FB_PIXEL_ID && data.shouldTrackFacebookAttribution) {
       trackInitiateCheckout({
         value: data.product.price / 100, // Convert satang to THB
         currency: data.product.currency,

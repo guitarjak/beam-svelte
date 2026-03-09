@@ -13,7 +13,12 @@
 
   // Track Facebook Pixel Purchase event on mount
   onMount(() => {
-    if (publicEnv.PUBLIC_FB_PIXEL_ID && data.eventId && data.product) {
+    if (
+      publicEnv.PUBLIC_FB_PIXEL_ID &&
+      data.shouldTrackFacebookAttribution &&
+      data.eventId &&
+      data.product
+    ) {
       trackPurchase({
         value: data.product.price / 100, // Convert satang to THB
         currency: data.product.currency,

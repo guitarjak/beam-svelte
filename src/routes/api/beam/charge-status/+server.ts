@@ -1,7 +1,13 @@
 import { json } from '@sveltejs/kit';
 import { getCharge } from '$lib/server/beam';
 import type { RequestHandler } from './$types';
-import { isRateLimited, verifySessionToken, getClientIp, extractSlugFromRef } from '$lib/server/security';
+import {
+  isRateLimited,
+  verifySessionToken,
+  getClientIp,
+  extractSlugFromRef,
+  normalizeFbclid
+} from '$lib/server/security';
 import { triggerCAPIIfNeeded } from '$lib/server/facebook-capi';
 
 // SECURITY: Protected charge status endpoint
@@ -75,7 +81,7 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
           referenceId: sessionMarker.referenceId,
           productSlug,
           customerEmail: sessionMarker.email,
-          fbclid: sessionMarker.fbclid,
+          fbclid: normalizeFbclid(sessionMarker.fbclid),
           clientIp,
           userAgent: request.headers.get('user-agent'),
           eventSourceUrl

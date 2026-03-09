@@ -11,7 +11,8 @@ import {
   getClientIp,
   isValidEmail,
   isValidCardToken,
-  isValidCvv
+  isValidCvv,
+  normalizeFbclid
 } from '$lib/server/security';
 
 const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL || '';
@@ -121,13 +122,14 @@ export const load: PageServerLoad = ({ params, url }) => {
   }
 
   // Capture Facebook Click ID from URL for attribution tracking
-  const fbclid = url.searchParams.get('fbclid') || undefined;
+  const fbclid = normalizeFbclid(url.searchParams.get('fbclid') || undefined);
 
   // Return the product to the page
   return {
     product,
     successUrl: buildSuccessUrl(product.successUrl, {}),
-    fbclid // Pass fbclid to client for inclusion in payment forms
+    fbclid, // Pass fbclid to client for inclusion in payment forms
+    shouldTrackFacebookAttribution: !!fbclid
   };
 };
 
@@ -157,7 +159,7 @@ export const actions = {
     let securityCode = formData.get('securityCode')?.toString() || '';
     const email = formData.get('email')?.toString() || '';
     const fullName = formData.get('fullName')?.toString() || '';
-    const fbclid = formData.get('fbclid')?.toString() || undefined;
+    const fbclid = normalizeFbclid(formData.get('fbclid')?.toString() || undefined);
 
     // SECURITY: Validate inputs with strict rules
     if (!isValidCardToken(cardToken)) {
@@ -313,7 +315,7 @@ export const actions = {
     const formData = await request.formData();
     const email = formData.get('email')?.toString() || '';
     const fullName = formData.get('fullName')?.toString() || '';
-    const fbclid = formData.get('fbclid')?.toString() || undefined;
+    const fbclid = normalizeFbclid(formData.get('fbclid')?.toString() || undefined);
 
     // Validate email if provided
     if (email && !isValidEmail(email)) {

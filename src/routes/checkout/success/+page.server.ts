@@ -5,7 +5,8 @@ import {
   verifySessionToken,
   getClientIp,
   generateEventId,
-  extractSlugFromRef
+  extractSlugFromRef,
+  normalizeFbclid
 } from '$lib/server/security';
 import { getProductBySlug } from '$lib/server/products';
 import { triggerCAPIIfNeeded } from '$lib/server/facebook-capi';
@@ -148,12 +149,13 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
   console.log('[EventID] Generated event_id for deduplication:', eventId, 'from referenceId:', referenceId);
 
   // Trigger CAPI using shared utility (handles deduplication via charge-specific cookie)
+  const attributedFbclid = normalizeFbclid(sessionMarker.fbclid);
   await triggerCAPIIfNeeded({
     chargeId,
     referenceId,
     productSlug,
     customerEmail: charge.customer?.email || sessionMarker.email,
-    fbclid: sessionMarker.fbclid,
+    fbclid: attributedFbclid,
     clientIp,
     userAgent: request.headers.get('user-agent'),
     eventSourceUrl: url.toString()
@@ -163,6 +165,7 @@ export const load: PageServerLoad = async ({ url, cookies, request }) => {
     referenceId,
     chargeId,
     verified: true,
+    shouldTrackFacebookAttribution: !!attributedFbclid,
     eventId, // For browser Pixel deduplication
     product: {
       // For browser Pixel tracking

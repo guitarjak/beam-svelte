@@ -235,6 +235,19 @@ export function isValidCvv(cvv: string): boolean {
 }
 
 /**
+ * Validate and normalize Facebook Click ID (fbclid)
+ * Accepts common fbclid character set and reasonable length.
+ */
+export function normalizeFbclid(fbclid?: string): string | undefined {
+  if (!fbclid) return undefined;
+  const normalized = fbclid.trim();
+  if (!normalized) return undefined;
+  if (normalized.length < 8 || normalized.length > 500) return undefined;
+  if (!/^[A-Za-z0-9._-]+$/.test(normalized)) return undefined;
+  return normalized;
+}
+
+/**
  * Mark webhook as sent for a session
  * @param token - Session token
  */
