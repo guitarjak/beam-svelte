@@ -778,19 +778,22 @@
               <form
                 method="POST"
                 action="?/payWithPromptPay"
-                use:enhance={() => {
+                use:enhance={({ cancel }) => {
                   // PREVENT DOUBLE SUBMIT: Return immediately if already loading
                   if (isPromptPayLoading) {
+                    cancel();
                     return async () => {};
                   }
 
                   // Validate full name and email
                   if (!fullName || fullName.trim() === '') {
                     fullNameError = true;
+                    cancel();
                     return async () => {};
                   }
                   if (!email || email.trim() === '' || !isValidEmail(email)) {
                     emailError = true;
+                    cancel();
                     return async () => {};
                   }
                   isPromptPayLoading = true;
