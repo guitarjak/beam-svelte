@@ -194,9 +194,10 @@ async function beamRequest<T>(
       if (!response.ok) {
         const errorMessage =
           data?.error?.errorMessage || data?.message || 'Beam API request failed';
+        const errorCode = data?.error?.errorCode;
 
         // Auto-fallback: if we accidentally hit production with playground keys, retry on playground host
-        const isInvalidCreds = data?.error?.errorCode === 'INVALID_CREDENTIALS_ERROR';
+        const isInvalidCreds = errorCode === 'INVALID_CREDENTIALS_ERROR';
         if (
           allowFallback &&
           baseUrl === PROD_BASE &&
@@ -208,6 +209,15 @@ async function beamRequest<T>(
         }
 
         console.error(`[Beam] Error response:`, data);
+
+        if (isInvalidCreds) {
+          throw new Error(
+            `Beam authentication failed for merchant "${BEAM_MERCHANT_ID}" in ${envName} mode. ` +
+            `Check that BEAM_MERCHANT_ID and BEAM_API_KEY are the correct server-side credentials ` +
+            `for the ${baseUrl === PLAYGROUND_BASE ? 'playground' : 'production'} environment.`
+          );
+        }
+
         throw new Error(`Beam API Error (${response.status}): ${errorMessage}`);
       }
 

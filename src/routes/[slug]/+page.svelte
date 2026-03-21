@@ -10,7 +10,7 @@
   export let form: ActionData;
 
   // Beam public credentials (safe for browser)
-  const BEAM_MERCHANT_ID = publicEnv.PUBLIC_BEAM_MERCHANT_ID || 'dsp'; // Read from environment
+  const BEAM_MERCHANT_ID = publicEnv.PUBLIC_BEAM_MERCHANT_ID || '';
   const BEAM_PUBLISHABLE_KEY = publicEnv.PUBLIC_BEAM_PUBLISHABLE_KEY || '';
   const BEAM_ENVIRONMENT = publicEnv.PUBLIC_BEAM_ENVIRONMENT || 'production';
   const BEAM_CLIENT_BASE = BEAM_ENVIRONMENT === 'playground'
@@ -194,6 +194,10 @@
     expiryYear: number;
     cardHolderName?: string;
   }): Promise<{ id: string }> {
+    if (!BEAM_MERCHANT_ID || !BEAM_PUBLISHABLE_KEY) {
+      throw new Error('Payment configuration is incomplete. Beam public credentials are missing.');
+    }
+
     // Create Basic Auth header: base64(merchantId:publishableKey)
     const credentials = `${BEAM_MERCHANT_ID}:${BEAM_PUBLISHABLE_KEY}`;
     const encodedCredentials = btoa(credentials);
